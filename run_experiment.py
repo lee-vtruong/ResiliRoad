@@ -18,6 +18,8 @@ def parse_args():
     parser.add_argument("--epochs", type=int, default=80)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--output", type=Path, default=Path("outputs/default"))
+    parser.add_argument("--no-fiedler", action="store_true")
+    parser.add_argument("--residual", action="store_true")
     return parser.parse_args()
 
 
@@ -26,8 +28,12 @@ def main():
     args.output.mkdir(parents=True, exist_ok=True)
     data = generate_dataset(args.samples, seed=args.seed)
     train, validation, test = split_by_graph(data, seed=args.seed)
-    model, history, device = train_model(train, validation, epochs=args.epochs, seed=args.seed)
-    metrics, targets, gcn, spectral = evaluate(model, train, test, device)
+    use_fiedler = not args.no_fiedler
+    model, history, device = train_model(
+        train, validation, epochs=args.epochs, seed=args.seed,
+        use_fiedler=use_fiedler, residual=args.residual,
+    )
+    metrics, targets, gcn, spectral = evaluate(model, train, test, device, use_fiedler=use_fiedler)
     failed_counts = np.array([item.failed_count for item in test])
     bins = {
         "1": failed_counts == 1,
@@ -51,6 +57,8 @@ def main():
         "test": len(test),
         "device": str(device),
         "split_unit": "base_graph",
+        "use_fiedler": use_fiedler,
+        "residual": args.residual,
     }
     (args.output / "metrics.json").write_text(json.dumps(metrics, indent=2), encoding="utf-8")
     (args.output / "dataset_summary.json").write_text(json.dumps(metadata, indent=2), encoding="utf-8")

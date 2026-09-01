@@ -32,20 +32,47 @@ def split_by_graph(data: list[Scenario], seed: int = 42):
     )
 
 
-def _predict(model: ScenarioGCN, data: list[Scenario], device: torch.device) -> np.ndarray:
+def _features(item: Scenario, use_fiedler: bool) -> torch.Tensor:
+    if use_fiedler:
+        return item.x
+    # Feature 2 is the absolute normalized Fiedler coordinate.
+    return item.x[:, [0, 1, 3, 4]]
+
+
+def _predict(
+    model: ScenarioGCN,
+    data: list[Scenario],
+    device: torch.device,
+    use_fiedler: bool,
+) -> np.ndarray:
     model.eval()
     with torch.no_grad():
         return np.array([
-            model(item.x.to(device), item.adjacency.to(device)).cpu().item()
+            model(
+                _features(item, use_fiedler).to(device),
+                item.adjacency.to(device),
+                torch.tensor(item.spectral_prediction, dtype=torch.float32, device=device),
+            ).cpu().item()
             for item in data
         ])
 
 
-def train_model(train, validation, epochs=80, lr=2e-3, seed=42):
+def train_model(
+    train,
+    validation,
+    epochs=80,
+    lr=2e-3,
+    seed=42,
+    use_fiedler=True,
+    residual=False,
+):
+    # Dense 35--65 node graphs are faster with one BLAS thread; many threads
+    # spend more time scheduling tiny matrix products than computing them.
+    torch.set_num_threads(1)
     torch.manual_seed(seed)
     random.seed(seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = ScenarioGCN().to(device)
+    model = ScenarioGCN(input_dim=5 if use_fiedler else 4, residual=residual).to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
     loss_fn = torch.nn.MSELoss()
     best_state = copy.deepcopy(model.state_dict())
@@ -59,13 +86,17 @@ def train_model(train, validation, epochs=80, lr=2e-3, seed=42):
         losses = []
         for item in train:
             optimizer.zero_grad()
-            prediction = model(item.x.to(device), item.adjacency.to(device))
+            prediction = model(
+                _features(item, use_fiedler).to(device),
+                item.adjacency.to(device),
+                torch.tensor(item.spectral_prediction, dtype=torch.float32, device=device),
+            )
             target = torch.tensor(item.target, dtype=torch.float32, device=device)
             loss = loss_fn(prediction, target)
             loss.backward()
             optimizer.step()
             losses.append(loss.item())
-        val_predictions = _predict(model, validation, device)
+        val_predictions = _predict(model, validation, device, use_fiedler)
         val_targets = np.array([item.target for item in validation])
         val_loss = float(np.mean((val_predictions - val_targets) ** 2))
         history.append({"epoch": epoch, "train_mse": float(np.mean(losses)), "val_mse": val_loss})
@@ -94,9 +125,9 @@ def regression_metrics(targets: np.ndarray, predictions: np.ndarray) -> dict[str
     }
 
 
-def evaluate(model, train, test, device):
+def evaluate(model, train, test, device, use_fiedler=True):
     targets = np.array([item.target for item in test])
-    gcn = _predict(model, test, device)
+    gcn = _predict(model, test, device, use_fiedler)
     spectral = np.array([item.spectral_prediction for item in test])
     train_mean = float(np.mean([item.target for item in train]))
     constant = np.repeat(train_mean, len(targets))

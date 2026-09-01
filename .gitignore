@@ -15,6 +15,9 @@ outputs/pilot/
 outputs/smoke/
 outputs/smoke_v2/
 outputs/benchmark/
+outputs/extended/
+outputs/extended_smoke/
+cache/
 
 # LaTeX intermediates (keep final PDF)
 report/tmp/
@@ -23,4 +26,3 @@ report/output/pdf/*.aux
 report/output/pdf/*.log
 report/output/pdf/*.out
 report/output/pdf/main.pdf
-

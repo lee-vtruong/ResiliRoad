@@ -114,3 +114,60 @@ def generate_dataset(
         graph_id += 1
     return scenarios
 
+
+def generate_scenarios_for_graph(
+    graph: nx.Graph,
+    samples: int,
+    seed: int = 42,
+    graph_id: int = 0,
+) -> list[Scenario]:
+    """Create disruption scenarios for one preprocessed real or synthetic graph."""
+    if not nx.is_connected(graph):
+        raise ValueError("Input graph must be connected")
+    graph = nx.convert_node_labels_to_integers(graph.copy())
+    rng = np.random.default_rng(seed)
+    py_rng = random.Random(seed)
+    base_lambda2, fiedler = fiedler_data(graph)
+    if base_lambda2 <= 1e-8:
+        raise ValueError("Input graph has numerically zero algebraic connectivity")
+    degrees = dict(graph.degree())
+    max_degree = max(degrees.values())
+    edges = list(graph.edges())
+    positions = nx.get_node_attributes(graph, "pos")
+    if len(positions) != graph.number_of_nodes():
+        raise ValueError("Every node must have a normalized 'pos' attribute")
+    fiedler_scale = max(max(abs(value) for value in fiedler.values()), 1e-8)
+    scenarios = []
+    max_failures = max(1, min(8, len(edges) // 8))
+    for _ in range(samples):
+        failed_count = int(rng.integers(1, max_failures + 1))
+        failed = py_rng.sample(edges, failed_count)
+        damaged = graph.copy()
+        damaged.remove_edges_from(failed)
+        target = relative_drop(base_lambda2, algebraic_connectivity(damaged))
+        first_order_loss = sum(
+            graph[u][v]["weight"] * edge_sensitivity(fiedler, (u, v))
+            for u, v in failed
+        )
+        failed_incident = {node: 0 for node in graph.nodes()}
+        for u, v in failed:
+            failed_incident[u] += 1
+            failed_incident[v] += 1
+        features = []
+        for node in sorted(graph.nodes()):
+            px, py = positions[node]
+            features.append([
+                degrees[node] / max_degree,
+                failed_incident[node] / max(degrees[node], 1),
+                abs(fiedler[node]) / fiedler_scale,
+                float(px), float(py),
+            ])
+        scenarios.append(Scenario(
+            x=torch.tensor(features, dtype=torch.float32),
+            adjacency=_normalized_adjacency(damaged),
+            target=target,
+            spectral_prediction=float(np.clip(first_order_loss / base_lambda2, 0.0, 1.0)),
+            graph_id=graph_id,
+            failed_count=failed_count,
+        ))
+    return scenarios

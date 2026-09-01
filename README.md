@@ -51,19 +51,31 @@ Kết quả gồm:
 - [Hướng dẫn từng bước](docs/HUONG_DAN_VI.md)
 - [Báo cáo sơ bộ](report/output/pdf/ResiliRoad_Preliminary_Report.pdf)
 
-## Kết quả benchmark sơ bộ
+## Kết quả mở rộng
 
 Tổng cộng 10.000 kịch bản trên 5 seed; 1.500 kịch bản test thuộc các đồ thị
 không xuất hiện trong train/validation.
 
 | Phương pháp | MAE | RMSE | R² | Spearman |
 |---|---:|---:|---:|---:|
-| ScenarioGCN | 0.0656 ± 0.0132 | **0.1492 ± 0.0273** | **0.5464 ± 0.0952** | 0.6279 ± 0.0571 |
-| Spectral first order | **0.0652 ± 0.0243** | 0.2090 ± 0.0508 | 0.1331 ± 0.1222 | **0.9507 ± 0.0172** |
-| Train-mean constant | 0.1200 ± 0.0217 | 0.2244 ± 0.0423 | -0.0077 ± 0.0119 | 0 |
+| Direct GCN | 0.0656 ± 0.0132 | 0.1492 ± 0.0273 | 0.5464 ± 0.0952 | 0.6279 ± 0.0571 |
+| GCN không có Fiedler feature | 0.0694 ± 0.0133 | 0.1517 ± 0.0351 | 0.5372 ± 0.0910 | 0.6308 ± 0.0542 |
+| Residual spectral-GCN | **0.0390 ± 0.0099** | **0.1083 ± 0.0320** | **0.7633 ± 0.0759** | 0.8764 ± 0.0375 |
+| Spectral first order | 0.0652 ± 0.0243 | 0.2090 ± 0.0508 | 0.1331 ± 0.1222 | **0.9507 ± 0.0172** |
 
-Các số là mean ± sample SD qua 5 seed. Đây là benchmark tổng hợp, không phải
-mô hình dự báo ngập thực tế.
+Trên 1.500 kịch bản zero-shot của mạng OSM 163 nút/221 cạnh, residual đạt
+MAE `0.1018 ± 0.0155` và Spearman `0.9269 ± 0.0119`, tốt hơn direct GCN.
+Các số là mean ± sample SD qua 5 seed. Đây là nghiên cứu gián đoạn cấu trúc,
+không phải mô hình dự báo ngập thực tế.
+
+Chạy nghiên cứu mở rộng:
+
+```powershell
+python download_osm.py
+python run_extended_benchmark.py --seed 11 --samples 2000 --osm-samples 300 --epochs 100 --output outputs/extended/seed_11
+# Lặp lại seed 22, 33, 44, 55
+python aggregate_extended.py
+```
 
 ## Nguyên tắc diễn giải
 

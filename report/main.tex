@@ -19,22 +19,22 @@
 
 \begin{document}
 \begin{abstract}
-We study the estimation of structural connectivity loss in spatial graphs under
-simultaneous edge disruptions.  The target is the relative decrease of algebraic
-connectivity, the second-smallest eigenvalue of the weighted graph Laplacian.
-We compare an interpretable first-order approximation derived from the Fiedler
-vector with a compact scenario-aware graph convolutional network
-(ScenarioGCN).  A leakage-resistant evaluation is performed on 10,000
-disruption scenarios over random geometric graphs: scenarios derived from the
-same base graph are kept in a single train, validation, or test split.  Across
-five independent seeds, the two methods obtain nearly identical mean absolute
-error (ScenarioGCN: $0.0656\pm0.0132$; spectral approximation:
-$0.0652\pm0.0243$).  ScenarioGCN substantially improves root mean squared error
-and $R^2$, whereas the spectral approximation provides markedly better rank
-correlation.  These results suggest complementary roles: learning controls
-large nonlinear errors, while spectral sensitivity remains a reliable,
-interpretable ranking tool.  The present study is a synthetic benchmark and
-does not yet constitute a real flood-risk model.
+We estimate structural connectivity loss in spatial graphs under simultaneous
+edge disruptions.  We compare a first-order Fiedler-vector approximation, a
+direct graph convolutional network (GCN), an ablation without the node-level
+Fiedler feature, and a residual spectral--GCN that learns a bounded correction
+to the analytical estimate.  A graph-disjoint evaluation uses 10,000 synthetic
+scenarios over five seeds, followed by zero-shot transfer to 1,500 scenarios on
+a 163-node OpenStreetMap road network in Ho Chi Minh City.  On synthetic test
+graphs, residual learning reduces mean absolute error from
+$0.0656\pm0.0132$ to $0.0390\pm0.0099$ and raises Spearman correlation from
+$0.6279\pm0.0571$ to $0.8764\pm0.0375$.  Removing the Fiedler node feature has
+only a small effect, showing that the improvement arises mainly from using the
+spectral estimate as a residual prior.  On OpenStreetMap transfer, the residual
+model achieves $0.1018\pm0.0155$ MAE and $0.9269\pm0.0119$ Spearman
+correlation.  The standalone first-order approximation fails under this sparse
+network shift, demonstrating both the value and limitation of the hybrid
+correction.  This is a structural-disruption study, not a flood-risk model.
 \end{abstract}
 
 \maketitle
@@ -54,13 +54,14 @@ networks (GNNs) provide a data-driven mechanism for representing interactions
 among several failed edges.  Instead of presuming that the learned model must
 dominate the mathematical approximation, we ask where each method is reliable.
 
-Our preliminary contributions are:
+Our contributions are:
 \begin{enumerate}
   \item a normalized prediction target comparable across graphs;
   \item an explicit first-order Fiedler-vector baseline;
   \item a small graph-level regressor requiring only standard PyTorch;
   \item a graph-disjoint experimental split that prevents structural leakage;
-  \item a five-seed comparison stratified by disruption size.
+  \item a five-seed comparison stratified by disruption size;
+  \item a Fiedler-feature ablation, a residual hybrid, and zero-shot OSM validation.
 \end{enumerate}
 
 \section{Mathematical formulation}
@@ -119,6 +120,18 @@ mean failed-edge incidence rate.  A two-layer head with sigmoid output predicts
 Equation~\eqref{eq:target}.  The model has three 48-dimensional hidden layers,
 dropout $0.15$, and is trained using AdamW and mean squared error.
 
+We evaluate three learned configurations.  \emph{Direct-full} uses all five
+features.  \emph{Direct-no-Fiedler} removes the third feature while preserving
+the architecture and split.  The residual model predicts a bounded correction
+$r_\theta$ to the analytical estimate:
+\begin{equation}
+ \widehat y_{\mathrm{res}}(G,S)=\operatorname{clip}
+ \bigl(\widehat y_{\mathrm{spec}}(G,S)+\tanh r_\theta(G,S),0,1\bigr).
+ \label{eq:residual}
+\end{equation}
+This distinguishes a Fiedler coordinate used as a node feature from the
+analytical estimate used as an explicit inductive prior.
+
 \section{Experimental design}
 
 \subsection{Synthetic spatial graphs}
@@ -142,55 +155,67 @@ baseline predicts the training-target mean.  Mean and sample standard deviation
 are computed over the five seeds (11, 22, 33, 44, 55), treating the seed rather
 than an individual correlated scenario as the independent replicate.
 
+\subsection{OpenStreetMap transfer}
+On September 1, 2026, OSMnx~\cite{boeing2017} was used to download the drivable
+network within 650~m of $(10.7626,106.6822)$, near the University of Science,
+VNU-HCM.  The directed multigraph was simplified, converted to an undirected
+simple graph, and restricted to its largest connected component.  The result
+has 163 nodes and 221 edges.  Conductance is $100/\text{length}_{\rm m}$ and
+coordinates are min--max normalized.  For each seed, 300 independent random
+edge-disruption scenarios are generated.  No OSM scenario is used for training,
+early stopping, or model selection: this is zero-shot transfer.  Map data are
+credited to OpenStreetMap contributors under the Open Database License.
+
 \section{Results}
 
 \begin{table}[t]
 \centering
-\caption{Held-out performance, mean $\pm$ standard deviation over five seeds.
-Lower is better for MAE/RMSE; higher is better for $R^2$ and $\rho$.}
+\caption{Synthetic held-out performance, mean $\pm$ standard deviation over
+five seeds. Lower is better for MAE/RMSE; higher is better for $R^2$ and $\rho$.}
 \label{tab:main}
 \begin{tabular}{lrrrr}
 \toprule
 Method & MAE & RMSE & $R^2$ & Spearman $\rho$\\
 \midrule
-ScenarioGCN & $0.0656\pm0.0132$ & $\mathbf{0.1492\pm0.0273}$ & $\mathbf{0.5464\pm0.0952}$ & $0.6279\pm0.0571$\\
-Spectral first order & $\mathbf{0.0652\pm0.0243}$ & $0.2090\pm0.0508$ & $0.1331\pm0.1222$ & $\mathbf{0.9507\pm0.0172}$\\
-Training-mean constant & $0.1200\pm0.0217$ & $0.2244\pm0.0423$ & $-0.0077\pm0.0119$ & $0$\\
+Direct GCN & $0.0656\pm0.0132$ & $0.1492\pm0.0273$ & $0.5464\pm0.0952$ & $0.6279\pm0.0571$\\
+GCN without Fiedler & $0.0694\pm0.0133$ & $0.1517\pm0.0351$ & $0.5372\pm0.0910$ & $0.6308\pm0.0542$\\
+Residual spectral--GCN & $\mathbf{0.0390\pm0.0099}$ & $\mathbf{0.1083\pm0.0320}$ & $\mathbf{0.7633\pm0.0759}$ & $0.8764\pm0.0375$\\
+Spectral first order & $0.0652\pm0.0243$ & $0.2090\pm0.0508$ & $0.1331\pm0.1222$ & $\mathbf{0.9507\pm0.0172}$\\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Table~\ref{tab:main} shows that MAE is effectively tied: the difference of
-$0.0004$ is negligible relative to between-seed variation.  ScenarioGCN reduces
-mean RMSE by approximately 28.6\% relative to the spectral approximation and
-achieves positive $R^2$ in every seed.  In contrast, spectral sensitivity has
-much higher and more stable rank correlation.  It therefore orders scenarios
-well but occasionally makes large finite-perturbation errors; the learned model
-controls these errors while sacrificing ranking resolution.
+The ablation increases MAE by only $0.0038$ on average and has essentially no
+effect on rank correlation.  The node-level Fiedler coordinate is therefore not
+a dominant direct-GCN input.  Residual learning reduces MAE by 40.6\% and RMSE
+by 27.5\% relative to direct GCN, while increasing $\rho$ by 0.249.  The
+standalone spectral approximation retains the best synthetic ranking but has
+much larger squared error.
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=.96\textwidth]{../outputs/summary/pooled_predictions.pdf}
-\caption{Pooled held-out predictions from five independent seeds.  The dashed
-line is exact agreement.  Clipping in the first-order baseline creates a band
-at prediction one; ScenarioGCN is more conservative at extremes.}
+\includegraphics[width=.94\textwidth]{../outputs/extended_summary/extended_comparison.pdf}
+\caption{Synthetic and zero-shot OSM transfer. Error bars are standard
+deviations over five seeds.}
 \label{fig:scatter}
 \end{figure}
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=.82\textwidth]{../outputs/summary/mae_by_failure_group.pdf}
-\caption{MAE stratified by disruption size. Error bars show standard deviation
-over seeds, not scenario-level uncertainty.}
+\includegraphics[width=.62\textwidth]{../outputs/extended_summary/osm_network.pdf}
+\caption{The 163-node, 221-edge OSM validation network near HCMUS after
+preprocessing. Map data copyright OpenStreetMap contributors.}
 \label{fig:groups}
 \end{figure}
 
-Figure~\ref{fig:groups} indicates that performance depends on disruption size.
-The first-order method is especially competitive for small perturbations, as
-expected from Equation~\eqref{eq:sensitivity}.  ScenarioGCN becomes competitive
-for moderate and larger perturbations, although variability across generated
-graphs remains substantial.  These observations support a hybrid research
-direction rather than unconditional replacement of the spectral model.
+On OSM transfer, direct GCN reaches $0.1097\pm0.0191$ MAE and
+$0.8639\pm0.0223$ rank correlation.  Removing Fiedler changes MAE by only
+$-0.0012$ on average.  Residual learning improves MAE to
+$0.1018\pm0.0155$ and rank correlation to $0.9269\pm0.0119$.  In contrast,
+the standalone first-order approximation deteriorates to $0.5662\pm0.0350$
+MAE and negative $R^2$.  The sparse OSM topology lies outside the regime where
+a finite multi-edge deletion is well represented by a first-order sum; learning
+a correction recovers much of its ranking information.
 
 \section{Discussion}
 
@@ -201,26 +226,22 @@ links are spatially correlated and depend on elevation, drainage, rainfall, and
 road geometry.  Accordingly, the present results must be described as
 ``disruption scenarios'', not flood predictions.
 
-The evaluation also exposes a useful methodological lesson.  Randomly splitting
+The evaluation exposes a useful methodological lesson.  Randomly splitting
 all scenarios would allow damaged variants of one base graph in both training
 and test sets, producing optimistic estimates.  Graph-level splitting should
-be mandatory in this setting.  Finally, a GCN uses local message passing and
-may struggle to reconstruct a global eigenvalue; the strong $R^2$ but moderate
-rank correlation motivates residual learning, where the network predicts the
-error of Equation~\eqref{eq:baseline} rather than the full target.
+be mandatory in this setting.  A direct GCN uses local message passing and
+struggles to rank a global eigenvalue response.  Equation~\eqref{eq:residual}
+combines the high-ranking spectral prior with a nonlinear correction, producing
+the most balanced method.  Its OSM success is zero-shot, but it is based on one
+small geographic area and should not be interpreted as city-wide validation.
 
 \section{Limitations and next experiments}
 
-Before presenting final claims, the following preregistered extensions are
-required:
+The following extensions remain necessary:
 \begin{enumerate}
-  \item repeat the experiment without the Fiedler coordinate to quantify how
-  much learned performance is inherited from spectral information;
   \item add spatially clustered failures and test out-of-range graph sizes;
-  \item compare direct GCN regression with a residual spectral--GCN hybrid;
   \item measure inference time under a fixed batching and hardware protocol;
-  \item validate on a small, versioned OpenStreetMap street network acquired
-  using OSMnx~\cite{boeing2017};
+  \item repeat OSM transfer over several areas and network densities;
   \item only after obtaining a licensed hazard layer, study flood-conditioned
   failure probabilities.
 \end{enumerate}
@@ -230,20 +251,21 @@ dependent test scenarios as independent replicates.
 
 \section{Conclusion}
 
-On a leakage-resistant synthetic benchmark, ScenarioGCN and first-order
-spectral sensitivity have nearly equal average absolute error but distinctly
-different strengths.  ScenarioGCN improves squared-error performance, while
-the Fiedler baseline preserves excellent scenario ranking.  This complementary
-behavior provides a defensible mathematical--AI poster result and suggests a
-hybrid residual model as the next step.  Claims about urban flooding or policy
-should wait for real-network and hazard-data validation.
+Residual spectral--GCN substantially improves direct GCN on synthetic graphs
+and provides the best balance of error and ranking under zero-shot OSM transfer.
+The Fiedler-feature ablation shows that this gain comes from the explicit
+analytical prior rather than merely exposing a spectral node feature.  The
+standalone first-order approximation is strong in-distribution but fails on the
+sparser OSM network, making the hybrid correction scientifically meaningful.
+Claims about urban flooding or policy must still wait for hazard data and
+multi-area validation.
 
 \section*{Reproducibility statement}
-The complete data generator, spectral baseline, ScenarioGCN implementation,
-graph-disjoint split, five benchmark seeds, aggregation script, and generated
-tables are provided with the project.  The reported runs used Python 3.13.11,
-standard CPU PyTorch, 2,000 scenarios per seed, at most 100 epochs, and fixed
-seeds 11, 22, 33, 44, and 55.
+The complete generators, spectral baseline, three learned configurations,
+graph-disjoint split, cached OSM GraphML, aggregation scripts, and generated
+tables are provided with the project.  The runs used Python 3.13.11, CPU-only
+PyTorch with one compute thread, 2,000 synthetic and 300 OSM scenarios per seed,
+at most 100 epochs, and fixed seeds 11, 22, 33, 44, and 55.
 
 \begin{thebibliography}{10}
 
@@ -264,6 +286,11 @@ G. Boeing,
 \emph{OSMnx: New methods for acquiring, constructing, analyzing, and
 visualizing complex street networks},
 Comput. Environ. Urban Syst. 65 (2017), 126--139.
+
+\bibitem{osm}
+OpenStreetMap contributors,
+\emph{OpenStreetMap}, 2026.
+\href{https://www.openstreetmap.org/copyright}{openstreetmap.org/copyright}.
 
 \bibitem{sohouenou2020}
 P. Y. R. Sohouenou, P. Christidis, A. Christodoulou, L. A. C. Neves, and
