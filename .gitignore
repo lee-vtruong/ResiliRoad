@@ -1,0 +1,26 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Local conference/application materials
+Content.txt
+poster-1-.png
+CV/
+Simple_Mathematics_Template/
+
+# Raw and exploratory experiment outputs
+outputs/pilot/
+outputs/smoke/
+outputs/smoke_v2/
+outputs/benchmark/
+
+# LaTeX intermediates (keep final PDF)
+report/tmp/
+report/report/
+report/output/pdf/*.aux
+report/output/pdf/*.log
+report/output/pdf/*.out
+report/output/pdf/main.pdf
+

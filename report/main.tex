@@ -1,0 +1,280 @@
+\documentclass[11pt]{amsart}
+
+\usepackage{amssymb,amsthm,amsmath,mathrsfs}
+\usepackage{graphicx}
+\usepackage[letterpaper,left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm]{geometry}
+\usepackage{booktabs}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+
+\newtheorem{prop}{Proposition}[section]
+\newtheorem{rem}[prop]{Remark}
+\newtheorem{defn}[prop]{Definition}
+
+\title[Learning spectral resilience]{Learning Road-Network Resilience under Disruptions\\with Spectral Graph Theory and Graph Neural Networks}
+\author{Le Van Truong}
+\address{University of Science, Vietnam National University Ho Chi Minh City}
+\date{September 2026}
+
+\begin{document}
+\begin{abstract}
+We study the estimation of structural connectivity loss in spatial graphs under
+simultaneous edge disruptions.  The target is the relative decrease of algebraic
+connectivity, the second-smallest eigenvalue of the weighted graph Laplacian.
+We compare an interpretable first-order approximation derived from the Fiedler
+vector with a compact scenario-aware graph convolutional network
+(ScenarioGCN).  A leakage-resistant evaluation is performed on 10,000
+disruption scenarios over random geometric graphs: scenarios derived from the
+same base graph are kept in a single train, validation, or test split.  Across
+five independent seeds, the two methods obtain nearly identical mean absolute
+error (ScenarioGCN: $0.0656\pm0.0132$; spectral approximation:
+$0.0652\pm0.0243$).  ScenarioGCN substantially improves root mean squared error
+and $R^2$, whereas the spectral approximation provides markedly better rank
+correlation.  These results suggest complementary roles: learning controls
+large nonlinear errors, while spectral sensitivity remains a reliable,
+interpretable ranking tool.  The present study is a synthetic benchmark and
+does not yet constitute a real flood-risk model.
+\end{abstract}
+
+\maketitle
+
+\section{Introduction}
+
+Road-network disruptions caused by extreme weather, construction, or local
+failures can alter global connectivity even when only a small subset of links
+is unavailable.  A common computational task is therefore to rank many
+possible disruption scenarios.  Exact spectral recomputation is well defined,
+but a fast surrogate may become useful when the number of networks and
+scenarios is large.
+
+This work connects two viewpoints.  Spectral graph theory supplies a precise
+connectivity measure and an interpretable local sensitivity.  Graph neural
+networks (GNNs) provide a data-driven mechanism for representing interactions
+among several failed edges.  Instead of presuming that the learned model must
+dominate the mathematical approximation, we ask where each method is reliable.
+
+Our preliminary contributions are:
+\begin{enumerate}
+  \item a normalized prediction target comparable across graphs;
+  \item an explicit first-order Fiedler-vector baseline;
+  \item a small graph-level regressor requiring only standard PyTorch;
+  \item a graph-disjoint experimental split that prevents structural leakage;
+  \item a five-seed comparison stratified by disruption size.
+\end{enumerate}
+
+\section{Mathematical formulation}
+
+Let $G=(V,E,w)$ be a connected, undirected graph with positive edge weights.
+Its weighted adjacency matrix is $A$, degree matrix is $D$, and combinatorial
+Laplacian is $L=D-A$.  Write the ordered eigenvalues as
+\[
+  0=\lambda_1(L)\leq \lambda_2(L)\leq\cdots\leq\lambda_{|V|}(L).
+\]
+Fiedler~\cite{fiedler1973} introduced $\lambda_2$ as the algebraic
+connectivity.  It is positive exactly when an undirected graph is connected.
+
+\begin{defn}[Relative connectivity loss]
+For a set of disrupted edges $S\subseteq E$, let $G-S$ denote the damaged
+graph.  We define
+\begin{equation}
+ y(G,S)=\operatorname{clip}\left(
+ 1-\frac{\lambda_2(G-S)}{\lambda_2(G)},0,1\right).
+ \label{eq:target}
+\end{equation}
+Thus $y=0$ represents no measured loss, while $y=1$ includes disconnection.
+\end{defn}
+
+Suppose $\lambda_2$ is simple and $u_2$ is its unit eigenvector.  For edge
+$e=(i,j)$, standard symmetric eigenvalue perturbation gives
+\begin{equation}
+ \frac{\partial\lambda_2}{\partial w_e}=(u_{2,i}-u_{2,j})^2.
+ \label{eq:sensitivity}
+\end{equation}
+Removing several edges is a finite, not infinitesimal, perturbation.  We use
+the clipped first-order prediction
+\begin{equation}
+ \widehat y_{\mathrm{spec}}(G,S)=\operatorname{clip}\left(
+ \frac{\sum_{(i,j)\in S}w_{ij}(u_{2,i}-u_{2,j})^2}{\lambda_2(G)},0,1\right).
+ \label{eq:baseline}
+\end{equation}
+This expression ignores higher-order interaction and can be inaccurate near an
+eigenvalue crossing or disconnection.  Its advantages are transparency and the
+absence of learned parameters.
+
+\section{ScenarioGCN}
+
+For each scenario, the model receives the normalized adjacency matrix of
+$G-S$, augmented with self-loops, and five node features: normalized degree in
+$G$, fraction of incident edges in $S$, absolute normalized Fiedler coordinate,
+and two spatial coordinates.  Three graph convolution layers use the update
+\[
+ H^{(\ell+1)}=\operatorname{ReLU}
+ \left(\widetilde D^{-1/2}\widetilde A\widetilde D^{-1/2}
+ H^{(\ell)}W^{(\ell)}\right),
+\]
+following the localized propagation principle of Kipf and
+Welling~\cite{kipf2017}.  Mean and max graph pooling are concatenated with the
+mean failed-edge incidence rate.  A two-layer head with sigmoid output predicts
+Equation~\eqref{eq:target}.  The model has three 48-dimensional hidden layers,
+dropout $0.15$, and is trained using AdamW and mean squared error.
+
+\section{Experimental design}
+
+\subsection{Synthetic spatial graphs}
+Random geometric graphs place nodes in the unit square and connect pairs
+within a radius.  They are a basic spatial-network model rather than a faithful
+road generator.  We adapt the radius until a connected graph with 35--65 nodes
+is obtained.  Edge conductance is set to inverse Euclidean length.  For each
+base graph we sample 20 scenarios, removing between one and eight edges.
+
+The full benchmark contains five independent runs of 2,000 scenarios.  Within
+each run, 70\%, 15\%, and 15\% of the scenarios are assigned to training,
+validation, and test sets by \emph{base graph identifier}.  Consequently no
+damaged version of a training graph appears in the test set.  Each run has
+1,400 training, 300 validation, and 300 test scenarios, for a pooled total of
+1,500 held-out predictions.
+
+\subsection{Evaluation}
+We report mean absolute error (MAE), root mean squared error (RMSE), coefficient
+of determination ($R^2$), and Spearman rank correlation $\rho$.  The constant
+baseline predicts the training-target mean.  Mean and sample standard deviation
+are computed over the five seeds (11, 22, 33, 44, 55), treating the seed rather
+than an individual correlated scenario as the independent replicate.
+
+\section{Results}
+
+\begin{table}[t]
+\centering
+\caption{Held-out performance, mean $\pm$ standard deviation over five seeds.
+Lower is better for MAE/RMSE; higher is better for $R^2$ and $\rho$.}
+\label{tab:main}
+\begin{tabular}{lrrrr}
+\toprule
+Method & MAE & RMSE & $R^2$ & Spearman $\rho$\\
+\midrule
+ScenarioGCN & $0.0656\pm0.0132$ & $\mathbf{0.1492\pm0.0273}$ & $\mathbf{0.5464\pm0.0952}$ & $0.6279\pm0.0571$\\
+Spectral first order & $\mathbf{0.0652\pm0.0243}$ & $0.2090\pm0.0508$ & $0.1331\pm0.1222$ & $\mathbf{0.9507\pm0.0172}$\\
+Training-mean constant & $0.1200\pm0.0217$ & $0.2244\pm0.0423$ & $-0.0077\pm0.0119$ & $0$\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:main} shows that MAE is effectively tied: the difference of
+$0.0004$ is negligible relative to between-seed variation.  ScenarioGCN reduces
+mean RMSE by approximately 28.6\% relative to the spectral approximation and
+achieves positive $R^2$ in every seed.  In contrast, spectral sensitivity has
+much higher and more stable rank correlation.  It therefore orders scenarios
+well but occasionally makes large finite-perturbation errors; the learned model
+controls these errors while sacrificing ranking resolution.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=.96\textwidth]{../outputs/summary/pooled_predictions.pdf}
+\caption{Pooled held-out predictions from five independent seeds.  The dashed
+line is exact agreement.  Clipping in the first-order baseline creates a band
+at prediction one; ScenarioGCN is more conservative at extremes.}
+\label{fig:scatter}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=.82\textwidth]{../outputs/summary/mae_by_failure_group.pdf}
+\caption{MAE stratified by disruption size. Error bars show standard deviation
+over seeds, not scenario-level uncertainty.}
+\label{fig:groups}
+\end{figure}
+
+Figure~\ref{fig:groups} indicates that performance depends on disruption size.
+The first-order method is especially competitive for small perturbations, as
+expected from Equation~\eqref{eq:sensitivity}.  ScenarioGCN becomes competitive
+for moderate and larger perturbations, although variability across generated
+graphs remains substantial.  These observations support a hybrid research
+direction rather than unconditional replacement of the spectral model.
+
+\section{Discussion}
+
+The experiment answers a narrower question than real road resilience.  It
+measures structural connectivity, not travel demand, capacity, delay, or
+recovery time.  Moreover, random edge deletion is not a flood model.  Flooded
+links are spatially correlated and depend on elevation, drainage, rainfall, and
+road geometry.  Accordingly, the present results must be described as
+``disruption scenarios'', not flood predictions.
+
+The evaluation also exposes a useful methodological lesson.  Randomly splitting
+all scenarios would allow damaged variants of one base graph in both training
+and test sets, producing optimistic estimates.  Graph-level splitting should
+be mandatory in this setting.  Finally, a GCN uses local message passing and
+may struggle to reconstruct a global eigenvalue; the strong $R^2$ but moderate
+rank correlation motivates residual learning, where the network predicts the
+error of Equation~\eqref{eq:baseline} rather than the full target.
+
+\section{Limitations and next experiments}
+
+Before presenting final claims, the following preregistered extensions are
+required:
+\begin{enumerate}
+  \item repeat the experiment without the Fiedler coordinate to quantify how
+  much learned performance is inherited from spectral information;
+  \item add spatially clustered failures and test out-of-range graph sizes;
+  \item compare direct GCN regression with a residual spectral--GCN hybrid;
+  \item measure inference time under a fixed batching and hardware protocol;
+  \item validate on a small, versioned OpenStreetMap street network acquired
+  using OSMnx~\cite{boeing2017};
+  \item only after obtaining a licensed hazard layer, study flood-conditioned
+  failure probabilities.
+\end{enumerate}
+No hypothesis test is emphasized with only five independent seeds.  The current
+effect sizes and standard deviations are more informative than treating 1,500
+dependent test scenarios as independent replicates.
+
+\section{Conclusion}
+
+On a leakage-resistant synthetic benchmark, ScenarioGCN and first-order
+spectral sensitivity have nearly equal average absolute error but distinctly
+different strengths.  ScenarioGCN improves squared-error performance, while
+the Fiedler baseline preserves excellent scenario ranking.  This complementary
+behavior provides a defensible mathematical--AI poster result and suggests a
+hybrid residual model as the next step.  Claims about urban flooding or policy
+should wait for real-network and hazard-data validation.
+
+\section*{Reproducibility statement}
+The complete data generator, spectral baseline, ScenarioGCN implementation,
+graph-disjoint split, five benchmark seeds, aggregation script, and generated
+tables are provided with the project.  The reported runs used Python 3.13.11,
+standard CPU PyTorch, 2,000 scenarios per seed, at most 100 epochs, and fixed
+seeds 11, 22, 33, 44, and 55.
+
+\begin{thebibliography}{10}
+
+\bibitem{fiedler1973}
+M. Fiedler,
+\emph{Algebraic connectivity of graphs},
+Czechoslovak Math. J. 23 (1973), 298--305.
+\href{https://doi.org/10.21136/CMJ.1973.101168}{doi:10.21136/CMJ.1973.101168}.
+
+\bibitem{kipf2017}
+T. N. Kipf and M. Welling,
+\emph{Semi-supervised classification with graph convolutional networks},
+International Conference on Learning Representations, 2017.
+\href{https://arxiv.org/abs/1609.02907}{arXiv:1609.02907}.
+
+\bibitem{boeing2017}
+G. Boeing,
+\emph{OSMnx: New methods for acquiring, constructing, analyzing, and
+visualizing complex street networks},
+Comput. Environ. Urban Syst. 65 (2017), 126--139.
+
+\bibitem{sohouenou2020}
+P. Y. R. Sohouenou, P. Christidis, A. Christodoulou, L. A. C. Neves, and
+D. Lo Presti,
+\emph{Using a random road graph model to understand road networks robustness
+to link failures}, Int. J. Crit. Infrastruct. Prot. 29 (2020), 100353.
+
+\bibitem{zaheer2017}
+M. Zaheer et al.,
+\emph{Deep Sets}, Advances in Neural Information Processing Systems 30, 2017.
+
+\end{thebibliography}
+
+\end{document}
