@@ -5,7 +5,7 @@
 \usepackage[font=small,labelfont=bf]{caption}
 \setlength{\parindent}{1em}
 \setlength{\parskip}{0pt}
-\title{Residual spectral graph learning for connectivity-loss estimation under multi-edge disruptions}
+\title{When does a spectral prior help graph learning? Connectivity-loss estimation under road-network disruptions}
 \author{Van-Truong Le\\
 \small Faculty of Information Technology, University of Science,\\
 \small Viet Nam National University Ho Chi Minh City, Viet Nam\\
@@ -21,13 +21,13 @@
 Rapid evaluation of many simultaneous road-link disruptions requires a useful
 compromise between exact spectral recomputation and local approximation. We
 estimate the relative loss of algebraic connectivity after multi-edge deletion
-using a graph convolutional network (GCN) that learns a bounded correction to a
+using graph neural networks (GNNs) that learn a bounded correction to a
 first-order Fiedler sensitivity. The design is tested under independent and
 spatially clustered failures, with graph-disjoint synthetic splits, zero-shot
 transfer to five OpenStreetMap (OSM) networks, and geographically blocked
-leave-one-area-out transfer. Eight neural configurations and analytical or
-set-based baselines isolate the contribution of the residual prior, Fiedler node
-feature, coordinates, and message passing. All uncertainty is calculated from
+leave-one-area-out transfer. GCN and GraphSAGE backbones, feature ablations, and
+analytical or set-based baselines isolate the contribution of the residual
+prior, Fiedler node feature, coordinates, and message passing. All uncertainty is calculated from
 five seed-level replicates rather than treating correlated scenarios as
 independent. In synthetic-to-OSM zero-shot tests, residual learning reduces mean
 absolute error relative to a direct GCN by 0.0085 (95\% seed-bootstrap interval
@@ -36,7 +36,7 @@ failures. However, when models are trained on three OSM areas and tested on a
 held-out fourth, the direct GCN is more stable: its errors are 0.135 and 0.109,
 compared with 0.161 and 0.144 for the residual model. A reliability-context
 extension likewise improves synthetic performance but degrades OSM transfer.
-Controlled sparse-eigensolver scaling from 50 to 800 nodes separates one-time
+Controlled sparse-eigensolver scaling extends to 20,000 nodes and separates one-time
 spectral setup, amortized cost, and update-only cost. These results identify the
 spectral residual as a useful but domain-sensitive inductive bias, and delimit
 its applicability to structural connectivity rather than hazard or traffic-flow
@@ -72,8 +72,11 @@ advantage persist under correlated disruptions and geographic domain shift?
 coordinates, or adjacency-aware message passing? \textbf{RQ4}: Where does the
 estimator fail and how does its runtime scale?
 
-The contributions are: (i) a bounded residual spectral--GCN for simultaneous
-edge deletions; (ii) controlled feature, architecture, and reliability-context
+Rather than asking whether one new GNN architecture wins, the central thesis is
+\emph{when a mathematically informed spectral prior helps graph learning under
+distribution shift, and when it becomes a biased anchor}. The contributions
+are: (i) a bounded residual spectral construction for simultaneous edge
+deletions; (ii) controlled feature, GCN/GraphSAGE, and reliability-context
 ablations; (iii) two disruption processes on five cached OSM networks; (iv) both
 synthetic-to-real zero-shot and geographically disjoint OSM transfer; (v)
 seed-paired bootstrap inference, calibration and failure-regime diagnostics; and
@@ -86,9 +89,11 @@ available.
 \subsection{Spectral robustness of complex networks}
 Fiedler introduced algebraic connectivity as a graph invariant
 ~\cite{fiedler1973}; later work related Laplacian spectra to expansion,
-connectivity, synchronization, and robustness~\cite{mohar1991,jamakovic2008}.
+connectivity, synchronization, and robustness
+~\cite{mohar1991,chung1997,jamakovic2008}. Capacity-weighted spectral analysis
+has also been used to diagnose transport-network vulnerability~\cite{bell2017}.
 For a simple eigenvalue, the squared difference of Fiedler coordinates across an
-edge gives the derivative with respect to its weight. Such derivatives explain
+edge gives the derivative with respect to its weight~\cite{kato1995}. Such derivatives explain
 infinitesimal sensitivity, whereas the present task includes several finite edge
 deletions. The residual model specifically targets the missing interaction and
 higher-order terms rather than replacing spectral analysis.
@@ -106,16 +111,39 @@ graph models enable controlled topology experiments~\cite{sohouenou2020}.
 Our spatial-cluster mechanism belongs to this stress-testing tradition but is a
 geometric proxy, not an empirical hazard model.
 
+Recent evidence makes scale and task definition especially important. Jana et
+al.~\cite{jana2023} use an edge-based GNN to rank critical road segments after
+disruption, directly motivating learning-based rapid screening; their output is
+an edge ranking, whereas ours is a graph-level spectral-loss estimate. Boeing
+and Ha~\cite{boeingha2024} simulate 2.4 billion trips across more than 8,000
+urban areas in 178 countries, establishing an empirical scale far beyond our
+five local networks. Zang et al.~\cite{zang2024} predict dynamic traffic
+resilience under rainfall with a multi-granularity GNN; their functional,
+temporal target is complementary to our static structural target. Reviews
+distinguish connectivity, robustness, vulnerability, and recovery-based
+resilience and warn against treating them as synonyms
+~\cite{rivera2022,mattsson2015,zeleke2026}.
+
 \subsection{Graph learning and analytical priors}
 GCNs aggregate local neighbourhood information and are permutation equivariant
-at node level~\cite{kipf2017}. Deep Sets provides an invariant alternative that
+at node level~\cite{kipf2017}. GraphSAGE supplies an inductive aggregation
+backbone~\cite{hamilton2017}; GIN studies the expressive limits of neighbourhood
+aggregation~\cite{xu2019}, while attention and message-passing frameworks expose
+alternative node/edge interactions~\cite{velickovic2018,gilmer2017}. Deep Sets provides an invariant alternative that
 does not propagate along edges~\cite{zaheer2017}. Graph Networks have also been
 used as learnable physical simulators~\cite{sanchezgonzalez2018}, illustrating
 how known structure and learned corrections can coexist. The novelty claimed
 here is not the first use of GNNs, residual learning, or spectral metrics. It is
 the leakage-resistant empirical separation of an explicit spectral prior from a
 spectral node feature, followed by geographic transfer and negative-ablation
-analysis on spatial infrastructure networks.
+analysis on spatial infrastructure networks. Edge-aware modelling is especially
+relevant because disruption acts on links: Jana et al.~\cite{jana2023} encode a
+road line graph for edge ranking, and Almeida et al.~\cite{almeida2025} report
+edge-aware attention for backbone-network load prediction. The present study
+instead asks whether a simple node-message-passing estimator benefits from an
+explicit spectral prior across domains. Recent JCN work on urban edge removal
+uses diffusive transport~\cite{bowater2026}, situating algebraic connectivity
+among several legitimate network-function proxies.
 
 \section{Problem formulation and method}
 Let $G=(V,E,w)$ be a connected undirected weighted graph, with combinatorial
@@ -166,7 +194,11 @@ The ablation matrix contains direct and residual GCNs with all features, without
 Fiedler, and without coordinates; Deep Sets and a summary-statistic MLP are
 non-GCN baselines. A further reliability-context residual appends the prior,
 normalized failure count, density, and graph size to the prediction head. It
-does not use damaged connectivity or any label-derived flag.
+does not use damaged connectivity or any label-derived flag. As a stronger
+architecture control, GraphSAGE concatenates each node state with a normalized
+neighbourhood aggregate before each of three learned transformations. Its direct
+and residual variants use the same features, pooling, optimizer, split, and
+stopping rule as the GCN.
 
 \section{Experimental design}
 \subsection{Synthetic graphs and disruption processes}
@@ -199,9 +231,9 @@ Da Lat&48&55&0.0488\\ \bottomrule
 \end{tabular}
 \end{table}
 
-\begin{figure}[tbp]
+\begin{figure}[H]
 \centering
-\includegraphics[width=.85\textwidth]{../outputs/extended_summary/osm_network.pdf}
+\includegraphics[height=.30\textheight,trim=110 15 110 50,clip]{../outputs/extended_summary/osm_network.pdf}
 \caption{Processed HCMUS base network (163 nodes, 221 edges). Disruption
 scenarios remove subsets of the displayed links. Map data copyright
 OpenStreetMap contributors.}
@@ -295,18 +327,40 @@ failure (negative means improvement). It increases zero-shot OSM spatial MAE by
 [-0.0029, 0.1019]. Simple reliability metadata therefore encourages
 distribution-specific calibration rather than robust transfer.
 
-\begin{figure}[H]
+\begin{figure}[htbp]
 \centering
-\includegraphics[width=\textwidth]{../outputs/journal_summary/journal_extension_results.pdf}
-\caption{Journal extensions. (a) Controlled sparse-solver scaling separates
-exact, amortized, and update-only time. (b) Leave-one-area-out MAE. (c) MAE
-change caused by reliability context; positive values favour residual-full.
-Error bars in (b,c) are 95\% seed-bootstrap intervals.}
-\label{fig:journal}
-\par\small\textit{Alt text: Three panels show logarithmic runtime increasing
-with graph size, lower leave-one-area-out bars for direct GCN, and reliability
-context improving synthetic spatial data but worsening both OSM conditions.}
+\includegraphics[width=.96\textwidth]{../outputs/journal_summary/transfer_and_ablation.pdf}
+\caption{Transfer and negative-ablation results. (a) Leave-one-area-out OSM
+MAE. (b) MAE change caused by reliability context; positive values favour
+residual-full. Error bars are 95\% seed-bootstrap intervals.}
+\label{fig:transfer}
+\par\small\textit{Alt text: Two large panels show lower leave-one-area-out
+point estimates for direct GCN and reliability context improving synthetic
+spatial data but worsening both OSM conditions.}
 \end{figure}
+
+\subsection{Backbone robustness}
+Replacing GCN propagation with GraphSAGE tests whether the main conclusion is
+an artefact of a weak backbone. Table~\ref{tab:backbone} shows that this is not
+the case: residual learning improves point-estimate MAE for both backbones in
+all four zero-shot conditions. Paired direct-minus-residual differences for
+GraphSAGE are 0.0197 [0.0071, 0.0332] and 0.0190 [0.0107, 0.0273] on synthetic
+independent and spatial failures, and 0.0069 [0.0032, 0.0096] and 0.0239
+[-0.0073, 0.0697] on OSM. The final OSM-spatial interval crosses zero, so the
+effect is not declared established there.
+
+\begin{table}[htbp]
+\centering
+\caption{Architecture control: MAE, seed mean [95\% seed-bootstrap interval].}
+\label{tab:backbone}
+\resizebox{\textwidth}{!}{\begin{tabular}{llcccc}
+\toprule Domain&Failure&Direct GCN&Residual GCN&Direct GraphSAGE&Residual GraphSAGE\\ \midrule
+Synthetic&Independent&.077 [.054,.096]&.052 [.036,.071]&.066 [.050,.081]&\textbf{.046 [.034,.063]}\\
+Synthetic&Spatial&.081 [.067,.097]&\textbf{.065 [.049,.079]}&.084 [.068,.101]&.065 [.047,.085]\\
+OSM&Independent&.106 [.100,.111]&\textbf{.097 [.091,.102]}&.104 [.098,.108]&.097 [.091,.103]\\
+OSM&Spatial&.102 [.077,.148]&.090 [.071,.124]&.113 [.082,.164]&\textbf{.089 [.079,.099]}\\ \bottomrule
+\end{tabular}}
+\end{table}
 
 \subsection{Runtime and error regimes}
 On the five small OSM networks, exact dense eigendecomposition averages
@@ -319,6 +373,30 @@ and 5.92 ms. The slight non-monotonicity at small size reflects fixed solver
 overhead and graph-to-graph variability; this benchmark is descriptive, not a
 complexity proof.
 
+To test the actual screening motivation, a second sparse benchmark uses
+connected planar road-like graphs with 1,000, 2,000, 5,000, 10,000, and 20,000
+nodes and about 2.1 edges per node. At 20,000 nodes, sparse exact recomputation
+requires 1,302.4 ms per damaged graph. Intact eigensolver setup costs 1,335.3
+ms once; amortized over 1,000 screened scenarios, the prior costs 1.41 ms,
+sparse GNN inference 21.76 ms, and the combined path 23.17 ms. Thus the measured
+screening path is 56 times faster at the largest size, conditional on reusing
+one intact graph. Only three scenarios on each of two generated graphs are
+timed per size, and the large graphs are not used for accuracy training; these
+measurements support computational scaling, not predictive generalization.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=.92\textwidth]{../outputs/journal_summary/large_scale_runtime.pdf}
+\caption{Sparse CPU scaling from 1,000 to 20,000 nodes. Exact recomputation is
+timed per damaged graph; the hybrid curve combines intact spectral setup
+amortized over 1,000 scenarios with first-order evaluation and sparse GNN
+inference. Points are means over two graphs and three scenarios per graph.}
+\label{fig:scaling}
+\par\small\textit{Alt text: A log--log runtime plot shows exact sparse
+eigendecomposition rising to about 1.3 seconds at 20,000 nodes, while the
+amortized hybrid path rises to about 23 milliseconds.}
+\end{figure}
+
 In zero-shot OSM, residual-full MAE is 0.070 for connected damaged graphs and
 0.112 after disconnection. Site errors range from 0.041 (Can Tho) to 0.189
 (Da Lat). The densest site is also the smallest and hardest, so density cannot
@@ -328,14 +406,16 @@ leave-one-area-out errors are retained in a machine-readable table instead of
 being removed as outliers.
 
 \section{Discussion}
-The central positive result is conditional. A spectral residual improves a
-direct GCN on graph-disjoint synthetic tests and when both are transferred
-zero-shot to OSM. It combines the prior's ranking signal with learned nonlinear
-calibration. However, blocked OSM transfer and reliability-context ablation show
-that this inductive bias can amplify domain-specific error. Direct prediction is
-more stable when the training distribution already contains real-road graphs.
-This boundary condition is scientifically more useful than a universal
-superiority claim.
+The central result is a condition, not a new-architecture claim. A spectral
+residual improves both GCN and GraphSAGE on graph-disjoint synthetic tests and
+usually when transferred zero-shot to OSM. It combines the prior's ranking
+signal with learned nonlinear calibration. However, blocked OSM transfer and
+reliability-context ablation show that the same inductive bias can amplify
+domain-specific error. The prior then behaves as a shortcut or biased anchor:
+optimization remains close to a convenient analytical signal even when its
+calibration has shifted. Direct prediction is more stable when training already
+contains real-road graphs. Consequently, whether a mathematical prior helps is
+an empirical distribution-shift question, not an architectural guarantee.
 
 The study also separates the explicit prior from Fiedler node information.
 Neither Fiedler nor coordinate removal produces a stable loss, whereas replacing
@@ -347,14 +427,15 @@ coarse graph statistics are insufficient.
 
 \subsection{Limitations}
 Five 650-m Vietnamese neighbourhoods do not establish city-scale or
-cross-country generality. Their size and density are confounded. The synthetic
-geometric generator is denser than the OSM graphs, and the scaling graphs are
-deliberately denser still. Spatial clusters are not calibrated to flood,
+cross-country predictive generality. Their size and density are confounded. The
+synthetic geometric generator and large-scaling graphs are controlled proxies,
+not metropolitan OSM accuracy datasets. Spatial clusters are not calibrated to flood,
 landslide, earthquake, construction, or conflict data. Algebraic connectivity
 is structural: it omits direction, demand, congestion, capacity, travel time,
 accessibility, and restoration. Only five seed replicates limit precision, and
 no probabilistic predictive intervals are produced. Sparse batched neural
-implementations may change runtime rankings at city scale.
+implementations and spectral sparsification~\cite{spielman2011} may change
+runtime rankings at still larger scale.
 
 Future work should pre-register larger metropolitan regions, use nested blocked
 validation across countries, and factor graph size from density. Hazard rasters
@@ -367,20 +448,20 @@ replication rather than inflate sample size with correlated scenarios.
 \section{Conclusion}
 Residual spectral graph learning offers an interpretable, fast estimator of
 finite multi-edge connectivity loss, but its advantage depends on training
-domain. The method beats direct regression under graph-disjoint synthetic and
-synthetic-to-OSM zero-shot evaluation; direct GCN is more stable under blocked
+domain. The method beats direct GCN and GraphSAGE under graph-disjoint synthetic
+and most synthetic-to-OSM zero-shot evaluations; direct GCN is more stable under blocked
 OSM-to-OSM transfer. Reporting both outcomes, along with ablations, hierarchical
 uncertainty, calibration, error cases, and separated runtime costs, provides a
 reproducible account of when a Fiedler prior helps and when it does not.
 
 \section*{Data and code availability}
 Code, cached OSM-derived GraphML, manifests, experiment scripts, environment
-versions, and compact result tables are available at
-\url{https://github.com/lee-vtruong/ResiliRoad}.
+versions, compact result tables, and release metadata are available as
+ResiliRoad version 1.0.0~\cite{resiliroad}.
 OSM data are licensed under the Open Data Commons Open Database License and are
-attributed to OpenStreetMap contributors~\cite{osm}. Before submission, the
-author will archive the exact release in a DOI-issuing repository and replace
-this sentence with its permanent data citation.
+attributed to OpenStreetMap contributors~\cite{osm}. Release metadata are
+included so that the exact submitted version can be archived and cited
+persistently without relying on a mutable development branch.
 
 \section*{Funding}
 This research received no external funding.
@@ -403,12 +484,21 @@ uses at most 25. Software versions are Python 3.13.11, NumPy 2.4.4, SciPy
 logical AMD64 CPUs; CUDA was unavailable. Scripts record exact seeds and emit
 scenario predictions, training histories, fold assignments, runtime summaries,
 bootstrap tables, calibration diagnostics, and worst cases.
+The architecture-control runs use identical data and training settings for GCN
+and GraphSAGE. Large-scale runtime graphs are generated deterministically;
+sparse \texttt{eigsh} uses a fixed starting vector. The intact setup cost is
+reported both separately and amortized over 1,000 scenarios, preventing
+preprocessing from being hidden in the speed comparison.
 
 \begin{thebibliography}{99}
 \bibitem{fiedler1973} M. Fiedler, Algebraic connectivity of graphs,
 \emph{Czechoslovak Mathematical Journal} 23 (1973), 298--305.
 \bibitem{mohar1991} B. Mohar, The Laplacian spectrum of graphs, in
 \emph{Graph Theory, Combinatorics, and Applications}, Wiley, 1991, 871--898.
+\bibitem{chung1997} F.R.K. Chung, \emph{Spectral Graph Theory}, CBMS Regional
+Conference Series in Mathematics 92, American Mathematical Society, 1997.
+\bibitem{kato1995} T. Kato, \emph{Perturbation Theory for Linear Operators},
+Springer, 1995. doi:10.1007/978-3-642-66282-9.
 \bibitem{jamakovic2008} A. Jamakovic and P. Van Mieghem, On the robustness of
 complex networks by using the algebraic connectivity, \emph{NETWORKING 2008},
 LNCS 4982 (2008), 183--194. doi:10.1007/978-3-540-79549-0\_16.
@@ -441,17 +531,66 @@ doi:10.1016/j.trd.2020.102672.
 effects of link-repair sequences on road network resilience,
 \emph{International Journal of Critical Infrastructure Protection} 34 (2021),
 100448. doi:10.1016/j.ijcip.2021.100448.
+\bibitem{bruneau2003} M. Bruneau et al., A framework to quantitatively assess
+and enhance the seismic resilience of communities, \emph{Earthquake Spectra}
+19 (2003), 733--752. doi:10.1193/1.1623497.
+\bibitem{mattsson2015} L.-G. Mattsson and E. Jenelius, Vulnerability and
+resilience of transport systems---a discussion of recent research,
+\emph{Transportation Research A} 81 (2015), 16--34.
+doi:10.1016/j.tra.2015.06.002.
+\bibitem{bell2017} M.G.H. Bell et al., Investigating transport network
+vulnerability by capacity weighted spectral analysis, \emph{Transportation
+Research B} 99 (2017), 251--266. doi:10.1016/j.trb.2017.03.002.
+\bibitem{rivera2022} D.A. Rivera-Royero et al., Road network performance: a
+review on relevant concepts, \emph{Computers \& Industrial Engineering} 165
+(2022), 107927. doi:10.1016/j.cie.2021.107927.
+\bibitem{jana2023} D. Jana, S. Malama, S. Narasimhan and E. Taciroglu,
+Edge-based graph neural network for ranking critical road segments in a
+network, \emph{PLOS ONE} 18 (2023), e0296045.
+doi:10.1371/journal.pone.0296045.
+\bibitem{boeingha2024} G. Boeing and P. Ha, Resilient by design: simulating
+street network disruptions across every urban area in the world,
+\emph{Transportation Research A} 182 (2024), 104016.
+doi:10.1016/j.tra.2024.104016.
+\bibitem{zang2024} Z. Zang et al., Predictive resilience assessment of road
+networks based on dynamic multi-granularity graph neural network,
+\emph{Neurocomputing} 601 (2024), 128207.
+doi:10.1016/j.neucom.2024.128207.
+\bibitem{zeleke2026} A. Zeleke, M. Tira and C. Scaini, Resilience of road
+networks to natural hazards: a systematic literature review,
+\emph{Transportation Engineering} 23 (2026), 100420.
+doi:10.1016/j.treng.2026.100420.
 \bibitem{kipf2017} T.N. Kipf and M. Welling, Semi-supervised classification
 with graph convolutional networks, \emph{ICLR}, 2017. arXiv:1609.02907.
+\bibitem{hamilton2017} W.L. Hamilton, R. Ying and J. Leskovec, Inductive
+representation learning on large graphs, \emph{NeurIPS} 30 (2017).
+\bibitem{gilmer2017} J. Gilmer et al., Neural message passing for quantum
+chemistry, \emph{ICML} 70 (2017), 1263--1272.
+\bibitem{velickovic2018} P. Veli\v{c}kovi\'c et al., Graph attention networks,
+\emph{ICLR}, 2018.
+\bibitem{xu2019} K. Xu et al., How powerful are graph neural networks?,
+\emph{ICLR}, 2019. arXiv:1810.00826.
 \bibitem{zaheer2017} M. Zaheer et al., Deep Sets, \emph{NeurIPS} 30 (2017).
 \bibitem{sanchezgonzalez2018} A. Sanchez-Gonzalez et al., Graph networks as
 learnable physics engines for inference and control, \emph{ICML} (2018),
 4470--4479.
+\bibitem{almeida2025} F. Almeida et al., Leveraging edge-aware graph neural
+networks to predict node load in backbone networks, \emph{Journal of Complex
+Networks} 13 (2025), cnaf050. doi:10.1093/comnet/cnaf050.
+\bibitem{bowater2026} R.J. Bowater, Impact of one-way streets on diffusive
+transport, \emph{Journal of Complex Networks} 14 (2026), cnag019.
+doi:10.1093/comnet/cnag019.
+\bibitem{spielman2011} D.A. Spielman and N. Srivastava, Graph sparsification by
+effective resistances, \emph{SIAM Journal on Computing} 40 (2011), 1913--1926.
+doi:10.1137/080734029.
 \bibitem{boeing2017} G. Boeing, OSMnx: new methods for acquiring, constructing,
 analyzing, and visualizing complex street networks, \emph{Computers,
 Environment and Urban Systems} 65 (2017), 126--139.
 doi:10.1016/j.compenvurbsys.2017.05.004.
 \bibitem{osm} OpenStreetMap contributors, OpenStreetMap, 2026,
 \url{https://www.openstreetmap.org/copyright}.
+\bibitem{resiliroad} V.-T. Le, ResiliRoad: spectral-prior graph learning for
+road-network disruption screening, version 1.0.0, 2026,
+\url{https://github.com/lee-vtruong/ResiliRoad}.
 \end{thebibliography}
 \end{document}

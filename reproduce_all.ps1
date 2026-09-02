@@ -13,6 +13,7 @@ foreach ($seed in 11, 22, 33, 44, 55) {
 
 python analyze_paper_results.py --input outputs/paper --output outputs/paper_summary
 python run_scaling_benchmark.py
+python run_large_scaling_benchmark.py
 
 foreach ($seed in 11, 22, 33, 44, 55) {
     python run_geographic_transfer.py `

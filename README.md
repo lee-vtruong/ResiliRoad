@@ -1,7 +1,7 @@
 # ResiliRoad
 
-Reproducible code and artefacts for **Residual Spectral Graph Learning for
-Connectivity-Loss Estimation under Multi-Edge Disruptions**.
+Reproducible code and artefacts for **When Does a Spectral Prior Help Graph
+Learning? Connectivity-Loss Estimation under Road-Network Disruptions**.
 
 ResiliRoad estimates the relative loss of algebraic connectivity after multiple
 road-network edges fail. It combines an interpretable first-order Fiedler
@@ -37,11 +37,18 @@ does not claim that the spectral residual is universally superior. The paired
 five-seed intervals include zero, so this reversal is a caution about stability
 and domain shift rather than a confirmed direct-GCN advantage.
 
+The conclusion is not tied to vanilla GCN: direct and residual GraphSAGE were
+run with the same data and optimization protocol. Residual GraphSAGE improves
+paired MAE on both synthetic modes and OSM-independent transfer; the OSM-spatial
+interval includes zero. A sparse CPU benchmark reaches 20,000 nodes, where
+exact recomputation takes 1.302 s per scenario versus 23.17 ms for the
+amortized spectral-prior plus sparse-GNN path when screening 1,000 scenarios.
+
 ## Methods compared
 
 - exact post-disruption eigendecomposition as ground truth;
 - first-order Fiedler spectral approximation;
-- direct and residual GCNs;
+- direct and residual GCNs and GraphSAGE models;
 - GCN ablations without the Fiedler node feature or coordinates;
 - Deep Sets and graph-summary MLP baselines.
 
@@ -66,6 +73,7 @@ python download_osm.py
 python run_paper_benchmark.py --seed 11 --output outputs/paper/seed_11
 python analyze_paper_results.py --input outputs/paper --output outputs/paper_summary
 python run_scaling_benchmark.py
+python run_large_scaling_benchmark.py
 python run_geographic_transfer.py --seed 11 --scenarios-per-site-mode 40 --epochs 25 --output outputs/geographic_transfer/seed_11
 python analyze_journal_results.py
 python collect_environment.py
@@ -101,7 +109,7 @@ script performs this loop and compiles the paper.
 **Van-Truong Le**  
 Faculty of Information Technology, University of Science, Viet Nam National
 University Ho Chi Minh City, Viet Nam  
-23120181@student.hcmus.edu.vn · lvtruong@selab.hcmus.edu.vn
+23120181@student.hcmus.edu.vn | lvtruong@selab.hcmus.edu.vn
 
 ORCID: [0009-0008-7015-7392](https://orcid.org/0009-0008-7015-7392)
 

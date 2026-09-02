@@ -9,7 +9,7 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from scipy.stats import spearmanr
 
 from .data import Scenario
-from .model import DeepSetsRegressor, ScenarioGCN, SummaryMLP
+from .model import DeepSetsRegressor, ScenarioGCN, ScenarioGraphSAGE, SummaryMLP
 
 
 def split_by_graph(data: list[Scenario], seed: int = 42):
@@ -85,6 +85,10 @@ def train_model(
     if model_kind == "gcn":
         model = ScenarioGCN(input_dim=input_dim, residual=residual,
                             reliability_aware=reliability_aware).to(device)
+    elif model_kind == "sage":
+        if reliability_aware:
+            raise ValueError("GraphSAGE baseline does not use reliability context")
+        model = ScenarioGraphSAGE(input_dim=input_dim, residual=residual).to(device)
     elif model_kind == "deepsets":
         if residual:
             raise ValueError("Deep Sets baseline does not use residual mode")

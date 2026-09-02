@@ -22,6 +22,8 @@ CONFIGS = {
                                  residual=True, reliability_aware=True),
     "residual_no_fiedler": dict(model_kind="gcn", use_fiedler=False, use_coordinates=True, residual=True),
     "residual_no_coordinates": dict(model_kind="gcn", use_fiedler=True, use_coordinates=False, residual=True),
+    "direct_sage": dict(model_kind="sage", use_fiedler=True, use_coordinates=True, residual=False),
+    "residual_sage": dict(model_kind="sage", use_fiedler=True, use_coordinates=True, residual=True),
     "deepsets": dict(model_kind="deepsets", use_fiedler=True, use_coordinates=True, residual=False),
     "summary_mlp": dict(model_kind="mlp", use_fiedler=True, use_coordinates=True, residual=False),
 }

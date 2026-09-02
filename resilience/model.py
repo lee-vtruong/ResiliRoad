@@ -58,6 +58,37 @@ class ScenarioGCN(nn.Module):
         return torch.sigmoid(raw)
 
 
+class ScenarioGraphSAGE(nn.Module):
+    """GraphSAGE-style mean aggregation for graph-level regression."""
+
+    def __init__(self, input_dim: int = 5, hidden_dim: int = 48,
+                 dropout: float = 0.15, residual: bool = False):
+        super().__init__()
+        self.residual = residual
+        dimensions = [input_dim, hidden_dim, hidden_dim]
+        self.layers = nn.ModuleList([
+            nn.Linear(2 * dimensions[i], hidden_dim) for i in range(3)
+        ])
+        self.dropout = nn.Dropout(dropout)
+        self.head = nn.Sequential(
+            nn.Linear(hidden_dim * 2 + 1, hidden_dim), nn.ReLU(), nn.Linear(hidden_dim, 1)
+        )
+
+    def forward(self, x, adjacency, spectral_prediction=None, reliability_context=None):
+        h = x
+        for layer in self.layers:
+            neighbourhood = adjacency @ h
+            h = self.dropout(torch.relu(layer(torch.cat([h, neighbourhood], dim=1))))
+        pooled = torch.cat([h.mean(dim=0), h.max(dim=0).values,
+                            x[:, 1].mean().reshape(1)])
+        raw = self.head(pooled).squeeze()
+        if self.residual:
+            if spectral_prediction is None:
+                raise ValueError("Residual mode requires a spectral prediction")
+            return torch.clamp(spectral_prediction + torch.tanh(raw), 0.0, 1.0)
+        return torch.sigmoid(raw)
+
+
 class DeepSetsRegressor(nn.Module):
     """Permutation-invariant baseline over node features without message passing."""
 

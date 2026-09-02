@@ -1,6 +1,7 @@
 \documentclass[11pt]{letter}
 \usepackage[a4paper,margin=28mm]{geometry}
 \usepackage[hidelinks]{hyperref}
+\setlength{\emergencystretch}{2em}
 \signature{Van-Truong Le\\Corresponding author\\ORCID: 0009-0008-7015-7392}
 \address{Faculty of Information Technology\\University of Science\\
 Viet Nam National University Ho Chi Minh City\\Viet Nam\\
@@ -9,19 +10,21 @@ Viet Nam National University Ho Chi Minh City\\Viet Nam\\
 \begin{letter}{Professor Yamir Moreno\\Editor-in-Chief\\Journal of Complex Networks}
 \opening{Dear Professor Moreno,}
 
-Please consider the manuscript ``Residual spectral graph learning for
-connectivity-loss estimation under multi-edge disruptions'' as an original
+Please consider the manuscript ``When does a spectral prior help graph
+learning? Connectivity-loss estimation under road-network disruptions'' as an original
 research article in the \emph{Journal of Complex Networks}.
 
 The paper studies a structural problem at the intersection of network spectra,
 spatial infrastructure networks, and graph machine learning. Its central
 contribution is a hybrid estimator that learns only the finite-perturbation
 residual of an interpretable Fiedler edge-sensitivity approximation. The design
-is evaluated under independent and spatially correlated edge failures, with
+is evaluated with both GCN and GraphSAGE backbones under independent and spatially correlated edge failures, with
 graph-disjoint synthetic tests, five OpenStreetMap networks, geographically
 blocked leave-one-area-out transfer, feature and architecture ablations,
 seed-level paired bootstrap intervals, error-stratified analysis, and controlled
-computational scaling. A reliability-context extension that failed to transfer
+computational scaling to 20,000 nodes. The main question is when an analytical
+prior helps under distribution shift and when it becomes a biased anchor. A
+reliability-context extension that failed to transfer
 is reported transparently as a negative ablation.
 
 The manuscript fits the journal's interests in mathematical and numerical

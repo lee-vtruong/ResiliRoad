@@ -21,8 +21,11 @@ outputs/paper/
 outputs/paper_smoke/
 outputs/journal/
 outputs/journal_smoke/
+outputs/journal_arch/
+journal/output/rendered/
 outputs/geographic_transfer/
 outputs/geographic_transfer_smoke/
+outputs/sage_smoke/
 outputs/paper_summary/all_predictions.csv
 cache/
 

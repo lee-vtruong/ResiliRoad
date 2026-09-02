@@ -1,0 +1,22 @@
+{
+  "title": "ResiliRoad: residual spectral graph learning for road-network disruption analysis",
+  "description": "Reproducible software, cached OpenStreetMap-derived networks, experiment scripts, and compact result tables for connectivity-loss estimation under multi-edge disruptions.",
+  "creators": [
+    {
+      "name": "Le, Van-Truong",
+      "orcid": "0009-0008-7015-7392",
+      "affiliation": "Faculty of Information Technology, University of Science, Viet Nam National University Ho Chi Minh City"
+    }
+  ],
+  "license": "mit-license",
+  "upload_type": "software",
+  "access_right": "open",
+  "keywords": [
+    "algebraic connectivity",
+    "graph neural network",
+    "road-network disruption",
+    "spectral approximation",
+    "OpenStreetMap"
+  ]
+}
+
