@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import random
+from time import perf_counter
 
 import networkx as nx
 import numpy as np
@@ -18,6 +19,32 @@ class Scenario:
     spectral_prediction: float
     graph_id: int
     failed_count: int
+    failure_mode: str = "independent"
+    damaged_connected: bool = True
+    base_density: float = 0.0
+    spectral_clipped: bool = False
+    area: str = "synthetic"
+    exact_seconds: float = 0.0
+    spectral_seconds: float = 0.0
+
+
+def _sample_failed_edges(graph, edges, count, rng, py_rng, mode):
+    if mode == "independent":
+        return py_rng.sample(edges, count)
+    if mode != "spatial_cluster":
+        raise ValueError(f"Unknown failure mode: {mode}")
+    positions = nx.get_node_attributes(graph, "pos")
+    epicenter = edges[int(rng.integers(0, len(edges)))]
+    eu, ev = epicenter
+    center = (np.asarray(positions[eu]) + np.asarray(positions[ev])) / 2
+    scored = []
+    for edge in edges:
+        u, v = edge
+        midpoint = (np.asarray(positions[u]) + np.asarray(positions[v])) / 2
+        distance = float(np.linalg.norm(midpoint - center))
+        scored.append((distance + float(rng.uniform(0, 1e-9)), edge))
+    scored.sort(key=lambda item: item[0])
+    return [edge for _, edge in scored[:count]]
 
 
 def _connected_geometric_graph(rng: np.random.Generator, n: int) -> nx.Graph:
@@ -56,6 +83,7 @@ def generate_dataset(
     min_nodes: int = 35,
     max_nodes: int = 65,
     scenarios_per_graph: int = 20,
+    failure_mode: str = "independent",
 ) -> list[Scenario]:
     rng = np.random.default_rng(seed)
     py_rng = random.Random(seed)
@@ -77,15 +105,19 @@ def generate_dataset(
                 break
             max_failures = max(1, min(8, len(edges) // 8))
             failed_count = int(rng.integers(1, max_failures + 1))
-            failed = py_rng.sample(edges, failed_count)
+            failed = _sample_failed_edges(graph, edges, failed_count, rng, py_rng, failure_mode)
             damaged = graph.copy()
             damaged.remove_edges_from(failed)
+            exact_started = perf_counter()
             damaged_lambda2 = algebraic_connectivity(damaged)
+            exact_seconds = perf_counter() - exact_started
             target = relative_drop(base_lambda2, damaged_lambda2)
+            spectral_started = perf_counter()
             first_order_loss = sum(
                 graph[u][v]["weight"] * edge_sensitivity(fiedler, (u, v))
                 for u, v in failed
             )
+            spectral_seconds = perf_counter() - spectral_started
             spectral_prediction = float(np.clip(first_order_loss / base_lambda2, 0.0, 1.0))
 
             failed_incident = {node: 0 for node in graph.nodes()}
@@ -110,6 +142,12 @@ def generate_dataset(
                 spectral_prediction=spectral_prediction,
                 graph_id=graph_id,
                 failed_count=failed_count,
+                failure_mode=failure_mode,
+                damaged_connected=nx.is_connected(damaged),
+                base_density=nx.density(graph),
+                spectral_clipped=first_order_loss / base_lambda2 >= 1.0,
+                exact_seconds=exact_seconds,
+                spectral_seconds=spectral_seconds,
             ))
         graph_id += 1
     return scenarios
@@ -120,6 +158,8 @@ def generate_scenarios_for_graph(
     samples: int,
     seed: int = 42,
     graph_id: int = 0,
+    failure_mode: str = "independent",
+    area: str = "osm",
 ) -> list[Scenario]:
     """Create disruption scenarios for one preprocessed real or synthetic graph."""
     if not nx.is_connected(graph):
@@ -141,14 +181,18 @@ def generate_scenarios_for_graph(
     max_failures = max(1, min(8, len(edges) // 8))
     for _ in range(samples):
         failed_count = int(rng.integers(1, max_failures + 1))
-        failed = py_rng.sample(edges, failed_count)
+        failed = _sample_failed_edges(graph, edges, failed_count, rng, py_rng, failure_mode)
         damaged = graph.copy()
         damaged.remove_edges_from(failed)
+        exact_started = perf_counter()
         target = relative_drop(base_lambda2, algebraic_connectivity(damaged))
+        exact_seconds = perf_counter() - exact_started
+        spectral_started = perf_counter()
         first_order_loss = sum(
             graph[u][v]["weight"] * edge_sensitivity(fiedler, (u, v))
             for u, v in failed
         )
+        spectral_seconds = perf_counter() - spectral_started
         failed_incident = {node: 0 for node in graph.nodes()}
         for u, v in failed:
             failed_incident[u] += 1
@@ -169,5 +213,12 @@ def generate_scenarios_for_graph(
             spectral_prediction=float(np.clip(first_order_loss / base_lambda2, 0.0, 1.0)),
             graph_id=graph_id,
             failed_count=failed_count,
+            failure_mode=failure_mode,
+            damaged_connected=nx.is_connected(damaged),
+            base_density=nx.density(graph),
+            spectral_clipped=first_order_loss / base_lambda2 >= 1.0,
+            area=area,
+            exact_seconds=exact_seconds,
+            spectral_seconds=spectral_seconds,
         ))
     return scenarios

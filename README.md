@@ -1,84 +1,56 @@
-# VMS60 — Spectral resilience + AI
+# ResiliRoad
 
-Research starter kit cho đề tài poster:
+Mã nguồn và báo cáo cho đề tài **Residual Spectral Graph Learning for
+Connectivity-Loss Estimation under Multi-Edge Disruptions**.
 
-> **Learning Road-Network Resilience under Disruptions with Spectral Graph Theory and Graph Neural Networks**
+Mô hình ước lượng suy giảm algebraic connectivity khi nhiều cạnh của mạng đường
+bị gián đoạn. Dự án so sánh spectral first-order approximation, direct/residual
+GCN, Deep Sets, summary MLP, ablation Fiedler feature và tọa độ.
 
-Tác giả: **Le Van Truong** — University of Science, VNU-HCM.
+## Kết quả chính
 
-Mục tiêu là dự báo mức suy giảm *algebraic connectivity* khi một tập cạnh của
-mạng giao thông bị gián đoạn. Repository có ba lớp kết quả:
+Thí nghiệm dùng 5 seed, graph-disjoint synthetic split, hai cơ chế gián đoạn
+(độc lập và cụm không gian), cùng zero-shot transfer trên 5 mạng OSM Việt Nam.
+Bootstrap lấy mẫu theo seed, không xem các scenario cùng seed là mẫu độc lập.
 
-1. ground truth tính trực tiếp từ phổ Laplacian;
-2. baseline giải tích bậc nhất dùng Fiedler vector;
-3. mô hình ScenarioGCN học từ đồ thị sau gián đoạn.
+| OSM failure mode | Direct GCN MAE | Residual GCN MAE | Paired improvement [95% CI] |
+|---|---:|---:|---:|
+| Independent | 0.106 | 0.097 | 0.0085 [0.0039, 0.0131] |
+| Spatial cluster | 0.102 | 0.090 | 0.0121 [0.0026, 0.0247] |
 
-## Chạy nhanh
+Bỏ Fiedler node feature hoặc tọa độ chưa tạo khác biệt MAE có ý nghĩa ở mức 5
+seed; kết quả hỗ trợ residual prior, nhưng chưa hỗ trợ tuyên bố rằng từng feature
+riêng lẻ là cần thiết. Đây là nghiên cứu gián đoạn cấu trúc, không phải dự báo
+ngập hay mô hình giao thông.
 
-Yêu cầu Python 3.11+ và các gói: `numpy scipy networkx pandas scikit-learn
-torch matplotlib`.
+## Chạy toàn bộ
 
-```powershell
-python run_experiment.py --samples 600 --epochs 80 --output outputs/quick
-```
-
-Chạy smoke test nhanh:
-
-```powershell
-python run_experiment.py --samples 80 --epochs 3 --output outputs/smoke
-```
-
-Chạy benchmark 5 seed và tổng hợp:
+Yêu cầu Python 3.11+ và các gói trong `requirements.txt`. Không cần GPU; benchmark
+đã báo cáo được chạy hoàn toàn bằng CPU.
 
 ```powershell
-python run_experiment.py --samples 2000 --epochs 100 --seed 11 --output outputs/benchmark/seed_11
-# Lặp lại với seed 22, 33, 44, 55
-python aggregate_results.py --input outputs/benchmark --output outputs/summary
+pip install -r requirements.txt
+.\reproduce_all.ps1
 ```
 
-Kết quả gồm:
-
-- `metrics.json`: MAE, RMSE, R² và Spearman correlation;
-- `predictions.csv`: nhãn thật và dự báo trên test set;
-- `prediction_scatter.png`: hình dùng để kiểm tra chất lượng mô hình;
-- `learning_curve.png`: loss train/validation;
-- `dataset_summary.json`: cấu hình sinh dữ liệu.
-
-## Tài liệu
-
-- [Proposal tiếng Việt](docs/PROPOSAL_VI.md)
-- [Quy trình nghiên cứu](docs/RESEARCH_PROTOCOL_VI.md)
-- [Hướng dẫn từng bước](docs/HUONG_DAN_VI.md)
-- [Báo cáo sơ bộ](report/output/pdf/ResiliRoad_Preliminary_Report.pdf)
-
-## Kết quả mở rộng
-
-Tổng cộng 10.000 kịch bản trên 5 seed; 1.500 kịch bản test thuộc các đồ thị
-không xuất hiện trong train/validation.
-
-| Phương pháp | MAE | RMSE | R² | Spearman |
-|---|---:|---:|---:|---:|
-| Direct GCN | 0.0656 ± 0.0132 | 0.1492 ± 0.0273 | 0.5464 ± 0.0952 | 0.6279 ± 0.0571 |
-| GCN không có Fiedler feature | 0.0694 ± 0.0133 | 0.1517 ± 0.0351 | 0.5372 ± 0.0910 | 0.6308 ± 0.0542 |
-| Residual spectral-GCN | **0.0390 ± 0.0099** | **0.1083 ± 0.0320** | **0.7633 ± 0.0759** | 0.8764 ± 0.0375 |
-| Spectral first order | 0.0652 ± 0.0243 | 0.2090 ± 0.0508 | 0.1331 ± 0.1222 | **0.9507 ± 0.0172** |
-
-Trên 1.500 kịch bản zero-shot của mạng OSM 163 nút/221 cạnh, residual đạt
-MAE `0.1018 ± 0.0155` và Spearman `0.9269 ± 0.0119`, tốt hơn direct GCN.
-Các số là mean ± sample SD qua 5 seed. Đây là nghiên cứu gián đoạn cấu trúc,
-không phải mô hình dự báo ngập thực tế.
-
-Chạy nghiên cứu mở rộng:
+Hoặc chạy từng phần:
 
 ```powershell
 python download_osm.py
-python run_extended_benchmark.py --seed 11 --samples 2000 --osm-samples 300 --epochs 100 --output outputs/extended/seed_11
-# Lặp lại seed 22, 33, 44, 55
-python aggregate_extended.py
+python run_paper_benchmark.py --seed 11 --output outputs/paper/seed_11
+python analyze_paper_results.py --input outputs/paper --output outputs/paper_summary
+python collect_environment.py
 ```
 
-## Nguyên tắc diễn giải
+Lặp benchmark với seed `11, 22, 33, 44, 55`. Script `reproduce_all.ps1` thực
+hiện vòng lặp này và biên dịch báo cáo.
 
-Đây là dữ liệu mô phỏng, không phải dự báo ngập thực tế. Chỉ được dùng từ
-“flood” sau khi bổ sung lớp nguy cơ ngập có nguồn dữ liệu đáng tin cậy. Trong
-giai đoạn đầu, tên chính xác là *network disruptions*.
+## Tài liệu và artefact
+
+- [Báo cáo PDF](report/output/pdf/ResiliRoad_Preliminary_Report.pdf)
+- [Proposal tiếng Việt](docs/PROPOSAL_VI.md)
+- [Protocol nghiên cứu](docs/RESEARCH_PROTOCOL_VI.md)
+- [Ma trận thí nghiệm](docs/EXPERIMENT_MATRIX.md)
+- [Metadata OSM](data/osm/manifest.json)
+- `outputs/paper_summary/`: metrics, bootstrap CI, paired differences, error
+  analysis, runtime và thông tin môi trường.

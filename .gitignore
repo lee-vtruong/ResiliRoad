@@ -17,6 +17,9 @@ outputs/smoke_v2/
 outputs/benchmark/
 outputs/extended/
 outputs/extended_smoke/
+outputs/paper/
+outputs/paper_smoke/
+outputs/paper_summary/all_predictions.csv
 cache/
 
 # LaTeX intermediates (keep final PDF)

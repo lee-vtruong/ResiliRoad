@@ -1,0 +1,21 @@
+{
+  "python": "3.13.11",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "processor": "AMD64 Family 25 Model 68 Stepping 1, AuthenticAMD",
+  "logical_cpus": 16,
+  "torch_cuda_available": false,
+  "torch_cuda_version": null,
+  "gpu": null,
+  "torch_threads_for_experiment": 1,
+  "packages": {
+    "numpy": "2.4.4",
+    "scipy": "1.17.1",
+    "networkx": "3.6.1",
+    "pandas": "2.2.3",
+    "scikit-learn": "1.9.0",
+    "torch": "2.11.0",
+    "matplotlib": "3.11.1",
+    "osmnx": "2.1.1",
+    "geopandas": "1.1.4"
+  }
+}

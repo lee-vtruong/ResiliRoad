@@ -48,3 +48,42 @@ class ScenarioGCN(nn.Module):
             # Learn a bounded correction to the analytical first-order estimate.
             return torch.clamp(spectral_prediction + torch.tanh(raw), 0.0, 1.0)
         return torch.sigmoid(raw)
+
+
+class DeepSetsRegressor(nn.Module):
+    """Permutation-invariant baseline over node features without message passing."""
+
+    def __init__(self, input_dim: int, hidden_dim: int = 48):
+        super().__init__()
+        self.phi = nn.Sequential(
+            nn.Linear(input_dim, hidden_dim), nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim), nn.ReLU(),
+        )
+        self.rho = nn.Sequential(
+            nn.Linear(hidden_dim * 2, hidden_dim), nn.ReLU(), nn.Linear(hidden_dim, 1)
+        )
+
+    def forward(self, x, adjacency, spectral_prediction=None):
+        h = self.phi(x)
+        pooled = torch.cat([h.mean(dim=0), h.max(dim=0).values])
+        return torch.sigmoid(self.rho(pooled).squeeze())
+
+
+class SummaryMLP(nn.Module):
+    """Fixed-summary non-graph baseline."""
+
+    def __init__(self, input_dim: int, hidden_dim: int = 64):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(input_dim * 4 + 2, hidden_dim), nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim), nn.ReLU(), nn.Linear(hidden_dim, 1),
+        )
+
+    def forward(self, x, adjacency, spectral_prediction=None):
+        summary = torch.cat([
+            x.mean(dim=0), x.std(dim=0, unbiased=False),
+            x.min(dim=0).values, x.max(dim=0).values,
+            torch.tensor([x.shape[0] / 100.0], device=x.device),
+            (adjacency > 0).float().mean().reshape(1),
+        ])
+        return torch.sigmoid(self.net(summary).squeeze())

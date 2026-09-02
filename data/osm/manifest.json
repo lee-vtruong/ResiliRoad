@@ -1,0 +1,52 @@
+[
+  {
+    "name": "hcmus",
+    "path": "data\\osm\\hcmus_650m_drive.graphml",
+    "latitude": 10.7626,
+    "longitude": 106.6822,
+    "radius_m": 650,
+    "nodes": 163,
+    "edges": 221,
+    "density": 0.01673862001060365
+  },
+  {
+    "name": "viasm",
+    "path": "data\\osm\\viasm_650m_drive.graphml",
+    "latitude": 21.0156,
+    "longitude": 105.8019,
+    "radius_m": 650,
+    "nodes": 206,
+    "edges": 301,
+    "density": 0.014255268766279895
+  },
+  {
+    "name": "danang",
+    "path": "data\\osm\\danang_650m_drive.graphml",
+    "latitude": 16.0678,
+    "longitude": 108.2208,
+    "radius_m": 650,
+    "nodes": 142,
+    "edges": 203,
+    "density": 0.020277694536010388
+  },
+  {
+    "name": "cantho",
+    "path": "data\\osm\\cantho_650m_drive.graphml",
+    "latitude": 10.034,
+    "longitude": 105.788,
+    "radius_m": 650,
+    "nodes": 114,
+    "edges": 178,
+    "density": 0.027635460332246547
+  },
+  {
+    "name": "dalat",
+    "path": "data\\osm\\dalat_650m_drive.graphml",
+    "latitude": 11.9404,
+    "longitude": 108.4583,
+    "radius_m": 650,
+    "nodes": 48,
+    "edges": 55,
+    "density": 0.04875886524822695
+  }
+]
