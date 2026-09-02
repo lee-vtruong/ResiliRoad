@@ -45,6 +45,17 @@ def summarize_loao(frame, rng):
     return by_seed, pd.DataFrame(summary)
 
 
+def paired_loao(by_seed, rng):
+    wide = by_seed.pivot(index=["seed", "failure_mode"], columns="model", values="mae").reset_index()
+    wide["delta_residual_minus_direct"] = wide.residual_full - wide.direct_full
+    rows = []
+    for mode, group in wide.groupby("failure_mode"):
+        mean, low, high = bootstrap(group.delta_residual_minus_direct, rng)
+        rows.append({"failure_mode": mode, "mean_delta_residual_minus_direct": mean,
+                     "ci_low": low, "ci_high": high})
+    return wide, pd.DataFrame(rows)
+
+
 def calibration(frame):
     rows = []
     for keys, group in frame.groupby(["seed", "model", "failure_mode"]):
@@ -84,7 +95,8 @@ def make_figure(loao_summary, reliability, scaling, output):
     ax = axes[0]
     for label, column, marker in (("Exact eigensolve", "exact_ms", "o"),
                                    ("Spectral, amortized", "amortized_ms", "s"),
-                                   ("Update only", "update_ms", "^")):
+                                   ("Update only", "update_ms", "^"),
+                                   ("Residual GCN", "gnn_ms", "D")):
         ax.plot(scaling.nodes, scaling[column], marker=marker, label=label)
     ax.set(xlabel="Nodes", ylabel="Time per scenario (ms)", yscale="log", title="(a) Controlled scaling")
     ax.legend(fontsize=8)
@@ -133,11 +145,14 @@ def main():
     paper = load_predictions(args.paper_root, SEEDS)
     aware = load_predictions(args.aware_root, SEEDS)
     loao_by_seed, loao_summary = summarize_loao(loao, rng)
+    loao_paired_by_seed, loao_paired_summary = paired_loao(loao_by_seed, rng)
     calibration_table = calibration(loao)
     reliability_by_seed, reliability_summary = reliability_comparison(paper, aware, rng)
     worst = loao.assign(abs_error=lambda x: abs(x.prediction - x.target)).nlargest(30, "abs_error")
     for name, table in (("loao_metrics_by_seed.csv", loao_by_seed),
                         ("loao_metrics_bootstrap.csv", loao_summary),
+                        ("loao_paired_by_seed.csv", loao_paired_by_seed),
+                        ("loao_paired_bootstrap.csv", loao_paired_summary),
                         ("loao_calibration.csv", calibration_table),
                         ("reliability_ablation_by_seed.csv", reliability_by_seed),
                         ("reliability_ablation_bootstrap.csv", reliability_summary),

@@ -33,7 +33,9 @@ The journal extension also finds an important boundary condition. When models
 are trained on three OSM areas, validated on a fourth, and tested on a fifth,
 the direct GCN is more stable than the residual GCN (MAE 0.135 vs 0.161 for
 independent and 0.109 vs 0.144 for spatial failures). The repository therefore
-does not claim that the spectral residual is universally superior.
+does not claim that the spectral residual is universally superior. The paired
+five-seed intervals include zero, so this reversal is a caution about stability
+and domain shift rather than a confirmed direct-GCN advantage.
 
 ## Methods compared
 
