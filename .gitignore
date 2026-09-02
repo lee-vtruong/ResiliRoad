@@ -19,6 +19,10 @@ outputs/extended/
 outputs/extended_smoke/
 outputs/paper/
 outputs/paper_smoke/
+outputs/journal/
+outputs/journal_smoke/
+outputs/geographic_transfer/
+outputs/geographic_transfer_smoke/
 outputs/paper_summary/all_predictions.csv
 cache/
 
@@ -29,6 +33,12 @@ report/output/pdf/*.aux
 report/output/pdf/*.log
 report/output/pdf/*.out
 report/output/pdf/main.pdf
+journal/output/pdf/*.aux
+journal/output/pdf/*.log
+journal/output/pdf/*.out
+journal/output/pdf/main.pdf
+journal/output/pdf/cover_letter.pdf
+journal/tmp/
 poster/tmp/
 poster/output/pdf/*.aux
 poster/output/pdf/*.log

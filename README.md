@@ -13,8 +13,8 @@ correction.
 ## Main findings
 
 The study uses five random seeds, graph-disjoint synthetic splits, independent
-and spatially clustered disruptions, and zero-shot transfer to five Vietnamese
-OpenStreetMap networks.
+and spatially clustered disruptions, zero-shot transfer to five Vietnamese
+OpenStreetMap networks, and geographically blocked leave-one-area-out transfer.
 
 | OSM failure process | Direct GCN MAE | Residual GCN MAE | Paired improvement [95% CI] |
 |---|---:|---:|---:|
@@ -28,6 +28,12 @@ analytical estimate as an explicit residual prior.
 
 This is a structural-disruption study. It is not a flood prediction, traffic
 assignment, or city-wide resilience model.
+
+The journal extension also finds an important boundary condition. When models
+are trained on three OSM areas, validated on a fourth, and tested on a fifth,
+the direct GCN is more stable than the residual GCN (MAE 0.135 vs 0.161 for
+independent and 0.109 vs 0.144 for spatial failures). The repository therefore
+does not claim that the spectral residual is universally superior.
 
 ## Methods compared
 
@@ -57,6 +63,9 @@ Individual stages can also be run separately:
 python download_osm.py
 python run_paper_benchmark.py --seed 11 --output outputs/paper/seed_11
 python analyze_paper_results.py --input outputs/paper --output outputs/paper_summary
+python run_scaling_benchmark.py
+python run_geographic_transfer.py --seed 11 --scenarios-per-site-mode 40 --epochs 25 --output outputs/geographic_transfer/seed_11
+python analyze_journal_results.py
 python collect_environment.py
 python create_method_overview.py
 ```
@@ -66,7 +75,9 @@ script performs this loop and compiles the paper.
 
 ## Repository structure
 
-- [`report/`](report/) - LaTeX source and final paper PDF.
+- [`journal/`](journal/) - Journal of Complex Networks manuscript, cover letter,
+  and submission checklist.
+- [`report/`](report/) - conference-report LaTeX source and PDF.
 - [`poster/`](poster/) - final VMS60 poster source and PDF.
 - [`resilience/`](resilience/) - scenario generation, models, and training.
 - [`data/osm/`](data/osm/) - cached OSM graphs and download manifest.
@@ -77,6 +88,8 @@ script performs this loop and compiles the paper.
 
 ## Paper and poster
 
+- [Journal of Complex Networks manuscript](journal/output/pdf/ResiliRoad_JCN_Manuscript.pdf)
+- [JCN cover letter](journal/output/pdf/ResiliRoad_JCN_Cover_Letter.pdf)
 - [Final paper PDF](report/output/pdf/ResiliRoad_Final_Paper.pdf)
 - [Final VMS60 poster PDF](poster/output/pdf/ResiliRoad_VMS60_Poster.pdf)
 - [Method overview (SVG)](figures/method_overview.svg)

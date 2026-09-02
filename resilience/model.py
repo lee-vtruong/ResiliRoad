@@ -13,9 +13,11 @@ class ScenarioGCN(nn.Module):
         hidden_dim: int = 48,
         dropout: float = 0.15,
         residual: bool = False,
+        reliability_aware: bool = False,
     ):
         super().__init__()
         self.residual = residual
+        self.reliability_aware = reliability_aware
         self.layers = nn.ModuleList([
             nn.Linear(input_dim, hidden_dim),
             nn.Linear(hidden_dim, hidden_dim),
@@ -23,7 +25,7 @@ class ScenarioGCN(nn.Module):
         ])
         self.dropout = nn.Dropout(dropout)
         self.head = nn.Sequential(
-            nn.Linear(hidden_dim * 2 + 1, hidden_dim),
+            nn.Linear(hidden_dim * 2 + 1 + (4 if reliability_aware else 0), hidden_dim),
             nn.ReLU(),
             nn.Linear(hidden_dim, 1),
         )
@@ -33,6 +35,7 @@ class ScenarioGCN(nn.Module):
         x: torch.Tensor,
         adjacency: torch.Tensor,
         spectral_prediction: torch.Tensor | None = None,
+        reliability_context: torch.Tensor | None = None,
     ) -> torch.Tensor:
         h = x
         for layer in self.layers:
@@ -41,7 +44,12 @@ class ScenarioGCN(nn.Module):
         mean_pool = h.mean(dim=0)
         max_pool = h.max(dim=0).values
         failure_rate = x[:, 1].mean().reshape(1)
-        raw = self.head(torch.cat([mean_pool, max_pool, failure_rate])).squeeze()
+        pooled = [mean_pool, max_pool, failure_rate]
+        if self.reliability_aware:
+            if reliability_context is None:
+                raise ValueError("Reliability-aware mode requires context")
+            pooled.append(reliability_context)
+        raw = self.head(torch.cat(pooled)).squeeze()
         if self.residual:
             if spectral_prediction is None:
                 raise ValueError("Residual mode requires a spectral prediction")
@@ -63,7 +71,7 @@ class DeepSetsRegressor(nn.Module):
             nn.Linear(hidden_dim * 2, hidden_dim), nn.ReLU(), nn.Linear(hidden_dim, 1)
         )
 
-    def forward(self, x, adjacency, spectral_prediction=None):
+    def forward(self, x, adjacency, spectral_prediction=None, reliability_context=None):
         h = self.phi(x)
         pooled = torch.cat([h.mean(dim=0), h.max(dim=0).values])
         return torch.sigmoid(self.rho(pooled).squeeze())
@@ -79,7 +87,7 @@ class SummaryMLP(nn.Module):
             nn.Linear(hidden_dim, hidden_dim), nn.ReLU(), nn.Linear(hidden_dim, 1),
         )
 
-    def forward(self, x, adjacency, spectral_prediction=None):
+    def forward(self, x, adjacency, spectral_prediction=None, reliability_context=None):
         summary = torch.cat([
             x.mean(dim=0), x.std(dim=0, unbiased=False),
             x.min(dim=0).values, x.max(dim=0).values,

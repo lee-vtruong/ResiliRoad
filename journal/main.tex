@@ -1,0 +1,454 @@
+\documentclass[11pt]{article}
+\usepackage[a4paper,textwidth=126mm,textheight=195mm,centering]{geometry}
+\usepackage{amsmath,amssymb,booktabs,graphicx,microtype,float,array}
+\usepackage[hidelinks]{hyperref}
+\usepackage[font=small,labelfont=bf]{caption}
+\setlength{\parindent}{1em}
+\setlength{\parskip}{0pt}
+\title{Residual spectral graph learning for connectivity-loss estimation under multi-edge disruptions}
+\author{Van-Truong Le\\
+\small Faculty of Information Technology, University of Science,\\
+\small Viet Nam National University Ho Chi Minh City, Viet Nam\\
+\small \href{mailto:23120181@student.hcmus.edu.vn}{23120181@student.hcmus.edu.vn};
+\href{mailto:lvtruong@selab.hcmus.edu.vn}{lvtruong@selab.hcmus.edu.vn}\\
+\small ORCID: \href{https://orcid.org/0009-0008-7015-7392}{0009-0008-7015-7392}}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Rapid evaluation of many simultaneous road-link disruptions requires a useful
+compromise between exact spectral recomputation and local approximation. We
+estimate the relative loss of algebraic connectivity after multi-edge deletion
+using a graph convolutional network (GCN) that learns a bounded correction to a
+first-order Fiedler sensitivity. The design is tested under independent and
+spatially clustered failures, with graph-disjoint synthetic splits, zero-shot
+transfer to five OpenStreetMap (OSM) networks, and geographically blocked
+leave-one-area-out transfer. Eight neural configurations and analytical or
+set-based baselines isolate the contribution of the residual prior, Fiedler node
+feature, coordinates, and message passing. All uncertainty is calculated from
+five seed-level replicates rather than treating correlated scenarios as
+independent. In synthetic-to-OSM zero-shot tests, residual learning reduces mean
+absolute error relative to a direct GCN by 0.0085 (95\% seed-bootstrap interval
+0.0039--0.0131) for independent failures and 0.0121 (0.0026--0.0247) for spatial
+failures. However, when models are trained on three OSM areas and tested on a
+held-out fourth, the direct GCN is more stable: its errors are 0.135 and 0.109,
+compared with 0.161 and 0.144 for the residual model. A reliability-context
+extension likewise improves synthetic performance but degrades OSM transfer.
+Controlled sparse-eigensolver scaling from 50 to 800 nodes separates one-time
+spectral setup, amortized cost, and update-only cost. These results identify the
+spectral residual as a useful but domain-sensitive inductive bias, and delimit
+its applicability to structural connectivity rather than hazard or traffic-flow
+prediction. Code and cached networks are available at
+\href{https://github.com/lee-vtruong/ResiliRoad}{github.com/lee-vtruong/ResiliRoad}.
+\end{abstract}
+
+\noindent\textbf{Keywords:} algebraic connectivity; Fiedler vector; graph neural
+network; spatial network; infrastructure robustness; domain shift.
+
+\section{Introduction}
+Road networks are spatially embedded complex networks whose link losses can
+fragment access routes and alter system-wide connectivity. Exhaustive exact
+evaluation becomes costly when a planner must screen many multi-link scenarios.
+Conversely, a first-order perturbation is fast and interpretable, but its local
+linearity can fail under finite deletions, eigenvalue crossings, and
+disconnection. This tension motivates a hybrid estimator: retain the known
+spectral direction and learn only its nonlinear error.
+
+Algebraic connectivity, the second-smallest Laplacian eigenvalue, is a global
+structural quantity~\cite{fiedler1973,mohar1991}. It does not measure travel
+demand, congestion, capacity, or recovery. The narrower goal here is fast
+structural stress testing: given an intact weighted graph and a set of removed
+edges, estimate its relative algebraic-connectivity loss. This distinction is
+important because transport robustness has also been defined using system travel
+time, capacity loss, accessibility, and repair trajectories
+~\cite{scott2006,sullivan2010,sohouenou2021repair}.
+
+This study asks four questions. \textbf{RQ1}: Does learning a residual over a
+Fiedler approximation improve direct graph regression? \textbf{RQ2}: Does this
+advantage persist under correlated disruptions and geographic domain shift?
+\textbf{RQ3}: Which gains come from the explicit prior, Fiedler node feature,
+coordinates, or adjacency-aware message passing? \textbf{RQ4}: Where does the
+estimator fail and how does its runtime scale?
+
+The contributions are: (i) a bounded residual spectral--GCN for simultaneous
+edge deletions; (ii) controlled feature, architecture, and reliability-context
+ablations; (iii) two disruption processes on five cached OSM networks; (iv) both
+synthetic-to-real zero-shot and geographically disjoint OSM transfer; (v)
+seed-paired bootstrap inference, calibration and failure-regime diagnostics; and
+(vi) a benchmark separating eigensolver setup, amortized spectral evaluation,
+and update-only cost. Importantly, the transfer experiments reveal a limitation:
+the residual prior is not uniformly superior once OSM training data are
+available.
+
+\section{Related work}
+\subsection{Spectral robustness of complex networks}
+Fiedler introduced algebraic connectivity as a graph invariant
+~\cite{fiedler1973}; later work related Laplacian spectra to expansion,
+connectivity, synchronization, and robustness~\cite{mohar1991,jamakovic2008}.
+For a simple eigenvalue, the squared difference of Fiedler coordinates across an
+edge gives the derivative with respect to its weight. Such derivatives explain
+infinitesimal sensitivity, whereas the present task includes several finite edge
+deletions. The residual model specifically targets the missing interaction and
+higher-order terms rather than replacing spectral analysis.
+
+\subsection{Road-network disruption}
+Road robustness depends on graph representation and disruption process.
+Multi-granularity analyses of empirical city networks show that structural
+conclusions can change with representation~\cite{duan2014}. Link-based indices
+using flow or capacity address functional effects~\cite{scott2006,sullivan2010},
+while critical-scenario optimization searches for damaging link combinations
+~\cite{bagloee2017}. Hazard-independent studies compare random, localized, and
+targeted multi-link failures~\cite{sohouenou2021}; temporal analysis of Zurich
+also demonstrates process-dependent robustness~\cite{casali2020}. Random road
+graph models enable controlled topology experiments~\cite{sohouenou2020}.
+Our spatial-cluster mechanism belongs to this stress-testing tradition but is a
+geometric proxy, not an empirical hazard model.
+
+\subsection{Graph learning and analytical priors}
+GCNs aggregate local neighbourhood information and are permutation equivariant
+at node level~\cite{kipf2017}. Deep Sets provides an invariant alternative that
+does not propagate along edges~\cite{zaheer2017}. Graph Networks have also been
+used as learnable physical simulators~\cite{sanchezgonzalez2018}, illustrating
+how known structure and learned corrections can coexist. The novelty claimed
+here is not the first use of GNNs, residual learning, or spectral metrics. It is
+the leakage-resistant empirical separation of an explicit spectral prior from a
+spectral node feature, followed by geographic transfer and negative-ablation
+analysis on spatial infrastructure networks.
+
+\section{Problem formulation and method}
+Let $G=(V,E,w)$ be a connected undirected weighted graph, with combinatorial
+Laplacian $L=D-A$ and eigenvalues
+$0=\lambda_1\leq\lambda_2\leq\cdots$. For disrupted edges $S\subseteq E$, the
+target is
+\begin{equation}
+y(G,S)=\operatorname{clip}\!\left(1-\frac{\lambda_2(G-S)}{\lambda_2(G)},0,1\right).
+\label{eq:target}
+\end{equation}
+Thus a disconnected damaged graph has $y=1$. If $u_2$ is a unit Fiedler vector
+and $\lambda_2$ is simple, edge sensitivity is
+\begin{equation}
+\frac{\partial\lambda_2}{\partial w_{ij}}=(u_{2,i}-u_{2,j})^2.
+\end{equation}
+The analytical prediction sums intact-graph derivatives:
+\begin{equation}
+\widehat y_{\mathrm{spec}}=\operatorname{clip}\!\left(
+\frac{\sum_{(i,j)\in S}w_{ij}(u_{2,i}-u_{2,j})^2}{\lambda_2(G)},0,1\right).
+\label{eq:prior}
+\end{equation}
+
+Each damaged graph supplies normalized adjacency and node features: intact
+degree, failed-edge incidence, absolute normalized Fiedler coordinate, and two
+normalized coordinates. Three 48-unit GCN layers feed mean--max graph pooling
+and a two-layer head. The direct model predicts $y$; the residual model predicts
+\begin{equation}
+\widehat y_{\mathrm{res}}=\operatorname{clip}\left(
+\widehat y_{\mathrm{spec}}+\tanh r_\theta(G,S),0,1\right).
+\label{eq:residual}
+\end{equation}
+The bounded correction concentrates capacity on finite-deletion error but can
+also inherit domain-specific bias from the prior.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{../figures/method_overview.pdf}
+\caption{ResiliRoad workflow. Exact damaged-graph eigendecomposition constructs
+labels only. The intact Fiedler vector produces both an optional node feature
+and the explicit first-order prior; the GCN learns a bounded correction.}
+\label{fig:method}
+\par\small\textit{Alt text: A flow diagram splits an intact road graph into an
+exact-label branch and a fast spectral-prior branch. Damaged adjacency and node
+features enter a GCN whose residual is added to the spectral estimate.}
+\end{figure}
+
+The ablation matrix contains direct and residual GCNs with all features, without
+Fiedler, and without coordinates; Deep Sets and a summary-statistic MLP are
+non-GCN baselines. A further reliability-context residual appends the prior,
+normalized failure count, density, and graph size to the prediction head. It
+does not use damaged connectivity or any label-derived flag.
+
+\section{Experimental design}
+\subsection{Synthetic graphs and disruption processes}
+Connected random geometric graphs contain 35--65 nodes and inverse-length edge
+conductance. Per seed, 800 scenarios are generated for each failure mode and
+entire base-graph families are assigned to train, validation, or test. Each
+scenario removes one to eight edges. Independent failure samples edges uniformly.
+Spatial-cluster failure chooses a random epicentre and removes the required
+number of edges with nearest geometric midpoints. Both modes share the same
+failure-count distribution.
+
+\subsection{OpenStreetMap networks}
+OSMnx~\cite{boeing2017} was used to obtain 650-m drivable networks around five
+Vietnamese sites. Directed multigraphs were simplified, converted to undirected
+simple graphs, and restricted to the largest connected component. Conductance
+is $100/\mathrm{length}_{\mathrm m}$. Cached GraphML freezes the exact instances
+because live OSM data evolve.
+
+\begin{table}[H]
+\centering
+\caption{OpenStreetMap networks used in the study.}
+\label{tab:osm}
+\begin{tabular}{lrrr}
+\toprule Site & Nodes & Edges & Density\\ \midrule
+HCMUS, Ho Chi Minh City&163&221&0.0167\\
+VIASM, Hanoi&206&301&0.0143\\
+Da Nang&142&203&0.0203\\
+Can Tho&114&178&0.0276\\
+Da Lat&48&55&0.0488\\ \bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[tbp]
+\centering
+\includegraphics[width=.85\textwidth]{../outputs/extended_summary/osm_network.pdf}
+\caption{Processed HCMUS base network (163 nodes, 221 edges). Disruption
+scenarios remove subsets of the displayed links. Map data copyright
+OpenStreetMap contributors.}
+\label{fig:osm}
+\par\small\textit{Alt text: A sparse, irregular street graph is drawn with red
+intersection nodes and pale-blue road edges; a dense central corridor connects
+several branching neighbourhoods.}
+\end{figure}
+
+Two transfer protocols answer different questions. In \emph{zero-shot OSM}, all
+learned models train only on synthetic graphs and test on 100 scenarios per
+site, mode, and seed. In \emph{leave-one-area-out OSM}, one site is test, the
+next site in a fixed rotation is validation, and the remaining three sites are
+training. Forty scenarios per site and mode are generated for each of five
+seeds; the direct and residual GCNs train for at most 25 epochs. No base area is
+shared across train, validation, and test in a fold.
+
+\subsection{Statistics, calibration, and runtime}
+Seeds 11, 22, 33, 44, and 55 are independent analysis units. MAE, RMSE,
+$R^2$, and Spearman correlation are first computed within seed. Confidence
+intervals resample the five seed-level statistics 10,000 times; comparisons
+bootstrap within-seed paired differences. No scenario-level $p$-value is used.
+Continuous calibration is summarized by regressing target on prediction within
+each seed, reporting slope, intercept, and signed mean error. Error slices by
+connectivity, failure count, density/site, and spectral clipping are diagnostic.
+
+The original OSM benchmark uses dense symmetric eigendecomposition and
+one-scenario neural inference on CPU. A separate controlled benchmark uses
+sparse symmetric eigensolves on random geometric graphs with 50--800 nodes. It
+reports exact damaged-graph solution, update-only Fiedler sensitivity, and
+amortized spectral cost (one intact setup spread over ten scenarios). These
+denser graphs are computational stress tests rather than road-realistic samples.
+
+\section{Results}
+\subsection{Graph-disjoint synthetic and zero-shot OSM results}
+\begin{table}[H]
+\centering\small
+\caption{MAE as seed mean [95\% seed-bootstrap interval].}
+\label{tab:primary}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lcc|cc}
+\toprule &\multicolumn{2}{c|}{Synthetic}&\multicolumn{2}{c}{Zero-shot OSM}\\
+Method&Independent&Spatial&Independent&Spatial\\ \midrule
+Spectral&.069 [.048,.095]&.144 [.102,.183]&.502 [.482,.521]&.650 [.643,.657]\\
+Summary MLP&.065 [.051,.079]&.108 [.082,.135]&.281 [.240,.320]&.347 [.269,.425]\\
+Deep Sets&.068 [.058,.078]&.105 [.085,.126]&.114 [.105,.123]&.143 [.122,.164]\\
+Direct GCN&.077 [.055,.098]&.081 [.067,.097]&.106 [.100,.112]&.102 [.077,.148]\\
+Residual GCN&\textbf{.052 [.036,.070]}&\textbf{.065 [.049,.079]}&
+\textbf{.097 [.091,.102]}&\textbf{.090 [.071,.124]}\\ \bottomrule
+\end{tabular}}
+\end{table}
+
+The residual model improves direct-GCN MAE by paired differences 0.0253
+[0.0106, 0.0400] and 0.0160 [0.0048, 0.0241] on synthetic independent and
+spatial failures. The improvements remain positive in zero-shot OSM: 0.0085
+[0.0039, 0.0131] and 0.0121 [0.0026, 0.0247]. Yet the analytical prior alone
+has poor OSM calibration despite useful rank information. Removing Fiedler or
+coordinates from residual-full yields intervals containing zero; individual
+node-feature necessity is therefore not established.
+
+\subsection{Geographically blocked transfer}
+\begin{table}[H]
+\centering
+\caption{Leave-one-area-out OSM performance, seed mean [95\% seed-bootstrap
+interval]. Each fold uses three training, one validation, and one test area.}
+\label{tab:loao}
+\begin{tabular}{lcc}
+\toprule Method&Independent MAE&Spatial-cluster MAE\\ \midrule
+Direct GCN&\textbf{.135 [.123,.145]}&\textbf{.109 [.106,.112]}\\
+Residual GCN&.161 [.118,.216]&.144 [.102,.198]\\ \bottomrule
+\end{tabular}
+\end{table}
+
+The ranking reverses when training is moved into the OSM domain. Direct GCN has
+mean $R^2$ 0.714 and 0.747, compared with 0.550 and 0.529 for the residual
+model. Residual performance is seed-sensitive: independent-failure MAE ranges
+from 0.092 to 0.265. Calibration explains part of this instability. Direct-GCN
+slopes stay between 0.91 and 1.06; residual slopes fall to 0.58 and 0.69 in the
+two poorest seeds, with substantial underprediction. Thus the spectral prior is
+helpful under one training distribution but can become a shortcut or a biased
+anchor under another.
+
+\subsection{Reliability-context negative ablation}
+Adding graph size, density, failure count, and spectral estimate to the residual
+head reduces synthetic spatial MAE by 0.0193 [0.0120, 0.0266] and has an
+inconclusive $-0.0034$ [-0.0159, 0.0111] change for synthetic independent
+failure (negative means improvement). It increases zero-shot OSM spatial MAE by
+0.0304 [0.0063, 0.0583]; the independent increase is 0.0452
+[-0.0029, 0.1019]. Simple reliability metadata therefore encourages
+distribution-specific calibration rather than robust transfer.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{../outputs/journal_summary/journal_extension_results.pdf}
+\caption{Journal extensions. (a) Controlled sparse-solver scaling separates
+exact, amortized, and update-only time. (b) Leave-one-area-out MAE. (c) MAE
+change caused by reliability context; positive values favour residual-full.
+Error bars in (b,c) are 95\% seed-bootstrap intervals.}
+\label{fig:journal}
+\par\small\textit{Alt text: Three panels show logarithmic runtime increasing
+with graph size, lower leave-one-area-out bars for direct GCN, and reliability
+context improving synthetic spatial data but worsening both OSM conditions.}
+\end{figure}
+
+\subsection{Runtime and error regimes}
+On the five small OSM networks, exact dense eigendecomposition averages
+5.094 ms per scenario, first-order update 0.018 ms, and residual inference
+0.674 ms on CPU. Controlled sparse scaling gives exact times 2.60, 3.69, 6.89,
+15.50, and 43.35 ms for 50, 100, 200, 400, and 800 nodes. Update-only time
+remains 0.039--0.075 ms; amortized spectral cost is 2.49, 0.37, 0.77, 1.71,
+and 4.17 ms. The non-monotone 50-node setup measurement reflects fixed solver
+overhead and graph-to-graph variability; the benchmark is descriptive, not a
+complexity proof.
+
+In zero-shot OSM, residual-full MAE is 0.070 for connected damaged graphs and
+0.112 after disconnection. Site errors range from 0.041 (Can Tho) to 0.189
+(Da Lat). The densest site is also the smallest and hardest, so density cannot
+be interpreted causally. No evaluated first-order estimate clips at one; the
+requested clipped/unclipped comparison is therefore undefined. The largest
+leave-one-area-out errors are retained in a machine-readable table instead of
+being removed as outliers.
+
+\section{Discussion}
+The central positive result is conditional. A spectral residual improves a
+direct GCN on graph-disjoint synthetic tests and when both are transferred
+zero-shot to OSM. It combines the prior's ranking signal with learned nonlinear
+calibration. However, blocked OSM transfer and reliability-context ablation show
+that this inductive bias can amplify domain-specific error. Direct prediction is
+more stable when the training distribution already contains real-road graphs.
+This boundary condition is scientifically more useful than a universal
+superiority claim.
+
+The study also separates the explicit prior from Fiedler node information.
+Neither Fiedler nor coordinate removal produces a stable loss, whereas replacing
+the residual architecture does. The robust ingredient in the first protocol is
+therefore how mathematical and learned estimates are combined, not merely the
+presence of an eigenvector channel. The poor Deep Sets ranking in several
+regimes supports adjacency-aware propagation, while the summary MLP shows that
+coarse graph statistics are insufficient.
+
+\subsection{Limitations}
+Five 650-m Vietnamese neighbourhoods do not establish city-scale or
+cross-country generality. Their size and density are confounded. The synthetic
+geometric generator is denser than the OSM graphs, and the scaling graphs are
+deliberately denser still. Spatial clusters are not calibrated to flood,
+landslide, earthquake, construction, or conflict data. Algebraic connectivity
+is structural: it omits direction, demand, congestion, capacity, travel time,
+accessibility, and restoration. Only five seed replicates limit precision, and
+no probabilistic predictive intervals are produced. Sparse batched neural
+implementations may change runtime rankings at city scale.
+
+Future work should pre-register larger metropolitan regions, use nested blocked
+validation across countries, and factor graph size from density. Hazard rasters
+could define correlated failures, while traffic assignment could test whether
+structural loss predicts service degradation. Mixture-of-experts or learned
+gating may decide when to trust the prior; conformal methods could add
+graph-population prediction regions. These extensions should preserve area-level
+replication rather than inflate sample size with correlated scenarios.
+
+\section{Conclusion}
+Residual spectral graph learning offers an interpretable, fast estimator of
+finite multi-edge connectivity loss, but its advantage depends on training
+domain. The method beats direct regression under graph-disjoint synthetic and
+synthetic-to-OSM zero-shot evaluation; direct GCN is more stable under blocked
+OSM-to-OSM transfer. Reporting both outcomes, along with ablations, hierarchical
+uncertainty, calibration, error cases, and separated runtime costs, provides a
+reproducible account of when a Fiedler prior helps and when it does not.
+
+\section*{Data and code availability}
+Code, cached OSM-derived GraphML, manifests, experiment scripts, environment
+versions, and compact result tables are available at
+\url{https://github.com/lee-vtruong/ResiliRoad}.
+OSM data are licensed under the Open Data Commons Open Database License and are
+attributed to OpenStreetMap contributors~\cite{osm}. Before submission, the
+author will archive the exact release in a DOI-issuing repository and replace
+this sentence with its permanent data citation.
+
+\section*{Funding}
+This research received no external funding.
+
+\section*{Conflict of interest}
+The author declares no conflict of interest.
+
+\section*{Acknowledgements and AI-use disclosure}
+Generative AI tools were used for language editing and software-development
+assistance. The author designed the study, verified the implementation and
+results, and takes responsibility for the manuscript.
+
+\appendix
+\section{Reproducibility details}
+All models use AdamW, mean-squared error, validation early stopping, and one
+PyTorch compute thread. Core runs use at most 80 epochs; blocked OSM transfer
+uses at most 25. Software versions are Python 3.13.11, NumPy 2.4.4, SciPy
+1.17.1, NetworkX 3.6.1, pandas 2.2.3, scikit-learn 1.9.0, PyTorch 2.11.0
+(CPU), Matplotlib 3.11.1, OSMnx 2.1.1, and GeoPandas 1.1.4. The machine has 16
+logical AMD64 CPUs; CUDA was unavailable. Scripts record exact seeds and emit
+scenario predictions, training histories, fold assignments, runtime summaries,
+bootstrap tables, calibration diagnostics, and worst cases.
+
+\begin{thebibliography}{99}
+\bibitem{fiedler1973} M. Fiedler, Algebraic connectivity of graphs,
+\emph{Czechoslovak Mathematical Journal} 23 (1973), 298--305.
+\bibitem{mohar1991} B. Mohar, The Laplacian spectrum of graphs, in
+\emph{Graph Theory, Combinatorics, and Applications}, Wiley, 1991, 871--898.
+\bibitem{jamakovic2008} A. Jamakovic and P. Van Mieghem, On the robustness of
+complex networks by using the algebraic connectivity, \emph{NETWORKING 2008},
+LNCS 4982 (2008), 183--194. doi:10.1007/978-3-540-79549-0\_16.
+\bibitem{scott2006} D.M. Scott et al., Network robustness index: a new method
+for identifying critical links, \emph{Journal of Transport Geography} 14
+(2006), 215--227. doi:10.1016/j.jtrangeo.2005.10.003.
+\bibitem{sullivan2010} J.L. Sullivan et al., Identifying critical road segments
+and measuring system-wide robustness, \emph{Transportation Research A} 44
+(2010), 323--336. doi:10.1016/j.tra.2010.02.003.
+\bibitem{duan2014} Y. Duan and F. Lu, Robustness of city road networks at
+different granularities, \emph{Physica A} 411 (2014), 21--34.
+doi:10.1016/j.physa.2014.05.073.
+\bibitem{bagloee2017} S.A. Bagloee et al., Identifying critical disruption
+scenarios and a global robustness index tailored to real life road networks,
+\emph{Transportation Research E} 98 (2017), 60--81.
+doi:10.1016/j.tre.2016.12.003.
+\bibitem{sohouenou2020} P.Y.R. Sohouenou et al., Using a random road graph
+model to understand road networks robustness to link failures,
+\emph{International Journal of Critical Infrastructure Protection} 29 (2020),
+100353. doi:10.1016/j.ijcip.2020.100353.
+\bibitem{casali2020} Y. Casali and H.R. Heinimann, Robustness response of the
+Zurich road network under different disruption processes, \emph{Computers,
+Environment and Urban Systems} 81 (2020), 101460.
+doi:10.1016/j.compenvurbsys.2020.101460.
+\bibitem{sohouenou2021} P.Y.R. Sohouenou et al., Using a hazard-independent
+approach to understand road-network robustness to multiple disruption scenarios,
+\emph{Transportation Research D} 93 (2021), 102672.
+doi:10.1016/j.trd.2020.102672.
+\bibitem{sohouenou2021repair} P.Y.R. Sohouenou and L.A.C. Neves, Assessing the
+effects of link-repair sequences on road network resilience,
+\emph{International Journal of Critical Infrastructure Protection} 34 (2021),
+100448. doi:10.1016/j.ijcip.2021.100448.
+\bibitem{kipf2017} T.N. Kipf and M. Welling, Semi-supervised classification
+with graph convolutional networks, \emph{ICLR}, 2017. arXiv:1609.02907.
+\bibitem{zaheer2017} M. Zaheer et al., Deep Sets, \emph{NeurIPS} 30 (2017).
+\bibitem{sanchezgonzalez2018} A. Sanchez-Gonzalez et al., Graph networks as
+learnable physics engines for inference and control, \emph{ICML} (2018),
+4470--4479.
+\bibitem{boeing2017} G. Boeing, OSMnx: new methods for acquiring, constructing,
+analyzing, and visualizing complex street networks, \emph{Computers,
+Environment and Urban Systems} 65 (2017), 126--139.
+doi:10.1016/j.compenvurbsys.2017.05.004.
+\bibitem{osm} OpenStreetMap contributors, OpenStreetMap, 2026,
+\url{https://www.openstreetmap.org/copyright}.
+\end{thebibliography}
+\end{document}

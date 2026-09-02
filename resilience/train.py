@@ -55,6 +55,9 @@ def _predict(
                 _features(item, use_fiedler, use_coordinates).to(device),
                 item.adjacency.to(device),
                 torch.tensor(item.spectral_prediction, dtype=torch.float32, device=device),
+                torch.tensor([item.spectral_prediction, item.failed_count / 8.0,
+                              item.base_density * 20.0, item.x.shape[0] / 200.0],
+                             dtype=torch.float32, device=device),
             ).cpu().item()
             for item in data
         ])
@@ -70,6 +73,7 @@ def train_model(
     use_coordinates=True,
     residual=False,
     model_kind="gcn",
+    reliability_aware=False,
 ):
     # Dense 35--65 node graphs are faster with one BLAS thread; many threads
     # spend more time scheduling tiny matrix products than computing them.
@@ -79,7 +83,8 @@ def train_model(
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     input_dim = 2 + int(use_fiedler) + 2 * int(use_coordinates)
     if model_kind == "gcn":
-        model = ScenarioGCN(input_dim=input_dim, residual=residual).to(device)
+        model = ScenarioGCN(input_dim=input_dim, residual=residual,
+                            reliability_aware=reliability_aware).to(device)
     elif model_kind == "deepsets":
         if residual:
             raise ValueError("Deep Sets baseline does not use residual mode")
@@ -107,6 +112,9 @@ def train_model(
                 _features(item, use_fiedler, use_coordinates).to(device),
                 item.adjacency.to(device),
                 torch.tensor(item.spectral_prediction, dtype=torch.float32, device=device),
+                torch.tensor([item.spectral_prediction, item.failed_count / 8.0,
+                              item.base_density * 20.0, item.x.shape[0] / 200.0],
+                             dtype=torch.float32, device=device),
             )
             target = torch.tensor(item.target, dtype=torch.float32, device=device)
             loss = loss_fn(prediction, target)

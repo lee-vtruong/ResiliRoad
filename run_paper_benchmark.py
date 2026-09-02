@@ -18,6 +18,8 @@ CONFIGS = {
     "direct_no_fiedler": dict(model_kind="gcn", use_fiedler=False, use_coordinates=True, residual=False),
     "direct_no_coordinates": dict(model_kind="gcn", use_fiedler=True, use_coordinates=False, residual=False),
     "residual_full": dict(model_kind="gcn", use_fiedler=True, use_coordinates=True, residual=True),
+    "residual_reliability": dict(model_kind="gcn", use_fiedler=True, use_coordinates=True,
+                                 residual=True, reliability_aware=True),
     "residual_no_fiedler": dict(model_kind="gcn", use_fiedler=False, use_coordinates=True, residual=True),
     "residual_no_coordinates": dict(model_kind="gcn", use_fiedler=True, use_coordinates=False, residual=True),
     "deepsets": dict(model_kind="deepsets", use_fiedler=True, use_coordinates=True, residual=False),
@@ -33,6 +35,8 @@ def parse_args():
     parser.add_argument("--epochs", type=int, default=80)
     parser.add_argument("--osm-manifest", type=Path, default=Path("data/osm/manifest.json"))
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--models", nargs="+", choices=sorted(CONFIGS),
+                        default=None, help="Optional subset of model configurations")
     return parser.parse_args()
 
 
@@ -95,7 +99,9 @@ def main():
         },
     }
     frames = []
-    for name, config in CONFIGS.items():
+    selected = args.models or list(CONFIGS)
+    for name in selected:
+        config = CONFIGS[name]
         started = perf_counter()
         model, history, device = train_model(
             list(train), list(validation), epochs=args.epochs, seed=args.seed, **config
