@@ -88,6 +88,8 @@ Faculty of Information Technology, University of Science, Viet Nam National
 University Ho Chi Minh City, Viet Nam  
 23120181@student.hcmus.edu.vn · lvtruong@selab.hcmus.edu.vn
 
+ORCID: [0009-0008-7015-7392](https://orcid.org/0009-0008-7015-7392)
+
 ## Data licence
 
 OpenStreetMap data are copyright OpenStreetMap contributors and available under

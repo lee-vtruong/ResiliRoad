@@ -5,9 +5,25 @@
 \newtheorem{defn}{Definition}[section]
 \title[Residual spectral graph learning]{Residual Spectral Graph Learning for Connectivity-Loss Estimation under Multi-Edge Disruptions}
 \author{Van-Truong Le}
-\address{Faculty of Information Technology, University of Science, Viet Nam National University Ho Chi Minh City, Viet Nam}
-\email{23120181@student.hcmus.edu.vn}
-\email{lvtruong@selab.hcmus.edu.vn}
+\makeatletter
+\def\@setauthors{%
+  \begingroup
+  \centering
+  \normalfont\normalsize\scshape Van-Truong Le\par
+  \vspace{0.45em}
+  \normalfont\small Faculty of Information Technology, University of Science,\par
+  \normalfont\small Viet Nam National University Ho Chi Minh City, Viet Nam\par
+  \vspace{0.3em}
+  \normalfont\small
+  \href{mailto:23120181@student.hcmus.edu.vn}{23120181@student.hcmus.edu.vn}
+  \quad\textbar\quad
+  \href{mailto:lvtruong@selab.hcmus.edu.vn}{lvtruong@selab.hcmus.edu.vn}\par
+  \normalfont\small ORCID:
+  \href{https://orcid.org/0009-0008-7015-7392}{0009-0008-7015-7392}\par
+  \endgroup
+}
+\def\@setaddresses{}
+\makeatother
 \date{September 2026}
 \begin{document}
 \begin{abstract}
@@ -31,6 +47,9 @@ Code, cached networks, and complete result tables are available at
 \href{https://github.com/lee-vtruong/ResiliRoad}{github.com/lee-vtruong/ResiliRoad}.
 \end{abstract}
 \maketitle
+\noindent\textbf{Keywords.} Algebraic connectivity; Fiedler vector; graph neural
+network; residual learning; road-network disruption; OpenStreetMap.
+\vspace{1.1em}
 
 \section{Introduction}
 Removing a few links can change global road-network connectivity. Exact
@@ -172,6 +191,17 @@ Can Tho&114&178&0.0276\\
 Da Lat&48&55&0.0488\\ \bottomrule
 \end{tabular}
 \end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=.72\textwidth]{../outputs/extended_summary/osm_network.pdf}
+\caption{Example real-road graph used for zero-shot evaluation: the processed
+HCMUS OSM network with 163 nodes and 221 undirected edges. Red points denote
+intersections or terminal nodes and blue lines denote road links. The image
+shows the intact base graph; disruption scenarios remove selected links. Map
+data copyright OpenStreetMap contributors.}
+\label{fig:osm-example}
+\end{figure}
 
 \subsection{Statistics and runtime}
 Metrics are calculated within each seed. Reported 95\% intervals resample the
