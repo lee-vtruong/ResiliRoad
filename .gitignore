@@ -29,3 +29,11 @@ report/output/pdf/*.aux
 report/output/pdf/*.log
 report/output/pdf/*.out
 report/output/pdf/main.pdf
+poster/tmp/
+poster/output/pdf/*.aux
+poster/output/pdf/*.log
+poster/output/pdf/*.nav
+poster/output/pdf/*.out
+poster/output/pdf/*.snm
+poster/output/pdf/*.toc
+poster/output/pdf/main.pdf

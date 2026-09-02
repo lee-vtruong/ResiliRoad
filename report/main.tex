@@ -1,11 +1,13 @@
-\documentclass[10pt]{amsart}
+\documentclass[11pt]{amsart}
 \usepackage{amssymb,amsthm,amsmath,graphicx,booktabs,microtype,float}
-\usepackage[letterpaper,left=2.25cm,right=2.25cm,top=2.2cm,bottom=2.2cm]{geometry}
+\usepackage[letterpaper,left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm]{geometry}
 \usepackage[hidelinks]{hyperref}
 \newtheorem{defn}{Definition}[section]
 \title[Residual spectral graph learning]{Residual Spectral Graph Learning for Connectivity-Loss Estimation under Multi-Edge Disruptions}
-\author{Le Van Truong}
-\address{University of Science, Vietnam National University Ho Chi Minh City}
+\author{Van-Truong Le}
+\address{Faculty of Information Technology, University of Science, Viet Nam National University Ho Chi Minh City, Viet Nam}
+\email{23120181@student.hcmus.edu.vn}
+\email{lvtruong@selab.hcmus.edu.vn}
 \date{September 2026}
 \begin{document}
 \begin{abstract}
@@ -25,6 +27,8 @@ prior provides the robust gain. Exact OSM eigendecomposition averages 5.09 ms
 per scenario; the first-order update requires 0.018 ms and learned inference
 0.44--0.67 ms on a CPU. This is structural disruption analysis, not hazard or
 traffic-flow prediction.
+Code, cached networks, and complete result tables are available at
+\href{https://github.com/lee-vtruong/ResiliRoad}{github.com/lee-vtruong/ResiliRoad}.
 \end{abstract}
 \maketitle
 
@@ -41,6 +45,13 @@ Our contributions are: (i) a residual spectral--GCN for multi-edge disruption;
 (iii) independent and spatial-cluster failures on five OSM networks; (iv)
 direct GCN, Deep Sets, summary-MLP, feature, and residual ablations; and (v)
 seed-level paired uncertainty, runtime, and regime-specific error analysis.
+
+We organize the experiment around four questions. \textbf{RQ1}: Does residual
+learning improve a direct GCN under graph-disjoint testing? \textbf{RQ2}: Does
+the advantage persist under zero-shot transfer and spatially correlated
+failures? \textbf{RQ3}: Are gains attributable to the Fiedler node coordinate,
+the spatial coordinates, or the explicit spectral prior? \textbf{RQ4}: What is
+the accuracy--runtime trade-off and in which graph regimes does the method fail?
 
 \section{Related work and novelty positioning}
 Fiedler's algebraic connectivity $\lambda_2$ characterizes connectedness and
@@ -98,6 +109,25 @@ without coordinates. Additional baselines are a Deep Sets node encoder and an
 MLP using graph summary statistics. All learned models use the same split,
 AdamW, mean-squared error, at most 80 epochs, and validation early stopping.
 
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{../figures/method_overview.pdf}
+\caption{Method overview. The fast Fiedler sensitivity is an explicit prior;
+the GCN only learns its finite-disruption correction. Exact eigendecomposition
+is used to construct labels and evaluate accuracy, not as a model input.}
+\label{fig:method}
+\end{figure}
+
+\subsection{Why residual learning?}
+Equation~\eqref{eq:spectral} encodes the correct infinitesimal direction but is
+biased for large perturbations, eigenvalue crossings, and disconnections. A
+direct GCN must learn both this first-order structure and all higher-order
+effects. Residual learning instead allocates model capacity to the discrepancy.
+The $\tanh$ correction prevents unbounded updates, while clipping enforces the
+range implied by Equation~\eqref{eq:target}. This construction does not guarantee
+an improvement: a severely shifted prior could mislead the learner, which is why
+the analytical, direct, and residual variants are all retained.
+
 \section{Experimental design}
 \subsection{Synthetic data and failure processes}
 Connected random geometric graphs contain 35--65 nodes with inverse-length
@@ -108,6 +138,12 @@ test. Independent failure samples 1--8 edges uniformly. Spatial failure
 chooses a random epicentre and removes the requested number of edges whose
 midpoints are nearest to it.
 
+The two mechanisms deliberately share the same failure-count distribution.
+Consequently, their difference isolates spatial dependence rather than greater
+damage magnitude. Edge weights and coordinates are computed on each intact base
+graph before deletion. The spectral prior is also computed from the intact
+graph, so its cost can be amortized when many scenarios share a network.
+
 \subsection{Five-network OSM transfer}
 OSMnx~\cite{boeing2017} downloaded 650-m drivable networks around five
 Vietnamese sites. Directed multigraphs were simplified, converted to undirected
@@ -116,6 +152,12 @@ is $100/\text{length}_{\rm m}$. Table~\ref{tab:osm} spans different sizes and
 densities. For every seed, site, and failure process, 100 scenarios were
 generated, giving 1,000 OSM scenarios per seed. OSM data are never used for
 training, early stopping, or model choice.
+
+The five sites were selected before model comparison to cover a practical range
+of local street patterns rather than to maximize favourable performance. They
+span 48--206 nodes, 55--301 edges, and more than a threefold density range. The
+cached GraphML and download manifest preserve the exact graph instances because
+live OSM/Overpass queries may change over time.
 
 \begin{table}[H]
 \centering
@@ -139,7 +181,51 @@ replicates. Runtime uses one PyTorch CPU thread on the same 16-logical-CPU
 Windows machine, and includes per-scenario prediction but excludes training and
 data loading.
 
+For each seed and model we report MAE, RMSE, $R^2$, and Spearman rank
+correlation. MAE is the primary calibration endpoint and Spearman correlation
+measures scenario-ranking quality. A confidence interval for a paired
+difference is obtained by first subtracting seed-matched metrics and then
+bootstrapping those five differences. This respects both shared scenarios and
+shared initialization/data-generation seeds. With only five independent
+replicates, intervals remain descriptive and no large-sample $p$-value is used.
+
+\subsection{Implementation}
+The implementation uses dense Laplacians because the evaluated graphs are
+small. Exact labels call a symmetric eigensolver on $G-S$. Neural inference is
+timed one scenario at a time to match the decision setting; batching could
+improve throughput but would confound comparison with the per-scenario
+eigensolver. PyTorch is restricted to one compute thread. The complete paper
+run trains eight configurations for each of five seeds, evaluates two synthetic
+and ten site-by-failure OSM test sets, and records timing beside every run.
+
 \section{Results}
+\subsection{Synthetic graph-disjoint evaluation}
+\begin{table}[H]
+\centering
+\caption{Synthetic test performance: seed mean MAE [95\% seed-bootstrap CI]
+and Spearman correlation.}
+\label{tab:synthetic}
+\small
+\begin{tabular}{lcc|cc}
+\toprule &\multicolumn{2}{c|}{Independent}&\multicolumn{2}{c}{Spatial cluster}\\
+Method&MAE&$\rho$&MAE&$\rho$\\ \midrule
+Spectral first order&0.069 [0.048,0.095]&\textbf{0.941}&0.144 [0.102,0.183]&\textbf{0.860}\\
+Summary MLP&0.065 [0.051,0.079]&0.593&0.108 [0.082,0.135]&0.610\\
+Deep Sets&0.068 [0.058,0.078]&0.298&0.105 [0.085,0.126]&0.593\\
+Direct GCN&0.077 [0.055,0.098]&0.587&0.081 [0.067,0.097]&0.549\\
+Residual GCN&\textbf{0.052 [0.036,0.070]}&0.804&\textbf{0.065 [0.049,0.079]}&0.700\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The first-order model ranks independent synthetic failures extremely well but
+is less calibrated in MAE. Spatial clustering widens the gap between local
+sensitivity and finite damage. The residual model has the lowest core-model MAE
+in both cases, while retaining much of the prior's ranking signal. Deep Sets
+underperforms GCN variants in ranking, suggesting that adjacency-aware message
+passing adds information beyond a permutation-invariant node aggregation.
+
+\subsection{Zero-shot OSM transfer}
 \begin{table}[H]
 \centering
 \caption{OSM zero-shot results: seed mean MAE [95\% seed-bootstrap CI] and
@@ -168,6 +254,23 @@ the stable contribution. In contrast, every paired MAE CI comparing
 residual-full with its no-Fiedler or no-coordinate variant contains zero. The
 spatial OSM point estimate even favours no-Fiedler. These features should be
 regarded as optional under the present power, not established necessities.
+
+\begin{table}[H]
+\centering
+\caption{Seed-paired MAE differences relative to residual-full. Positive means
+residual-full is better; intervals are 95\% seed-bootstrap CIs.}
+\label{tab:ablation}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llrr}
+\toprule Domain & Failure process & Direct GCN & Residual no Fiedler / no coordinates\\ \midrule
+Synthetic & Independent & $0.0253$ [0.0106,0.0400] & $0.0001$ [-0.0073,0.0074] / $-0.0018$ [-0.0073,0.0052]\\
+Synthetic & Spatial & $0.0160$ [0.0048,0.0241] & $-0.0027$ [-0.0148,0.0072] / $-0.0073$ [-0.0192,0.0030]\\
+OSM & Independent & $0.0085$ [0.0039,0.0131] & $-0.0014$ [-0.0034,0.0003] / $0.0001$ [-0.0031,0.0033]\\
+OSM & Spatial & $0.0121$ [0.0026,0.0247] & $-0.0120$ [-0.0507,0.0169] / $0.0047$ [-0.0302,0.0435]\\
+\bottomrule
+\end{tabular}
+}
+\end{table}
 
 \begin{figure}[H]
 \centering
@@ -207,6 +310,30 @@ the requested clipped-versus-unclipped comparison is undefined rather than
 silently omitted. The poor spectral OSM MAE instead reflects large
 non-saturating overestimates.
 
+\begin{table}[H]
+\centering
+\caption{Residual-full OSM error slices, pooled over failure processes and
+summarized by seed. These are diagnostic strata, not independent experiments.}
+\label{tab:error}
+\begin{tabular}{llr@{\qquad}llr}
+\toprule Slice & Group & MAE & Slice & Group & MAE\\ \midrule
+Connectivity&Connected&0.070&Area&Can Tho&0.041\\
+&Disconnected&0.112&&VIASM&0.061\\
+Failed edges&1&0.090&&Da Nang&0.088\\
+&2--3&0.116&&HCMUS&0.089\\
+&4--5&0.089&&Da Lat&0.189\\
+&6+&0.081&Spectral clip&Clipped&0 cases\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Disconnection is the clearest difficult regime. The peak at two--three failed
+edges occurs because failure count alone does not encode whether removed links
+form a cut. Likewise, density is confounded with graph size and street layout:
+the densest sample, Da Lat, is also the smallest and the hardest. Future
+experiments should vary size and density factorially rather than infer a causal
+density effect from five observational networks.
+
 \section{Discussion and limitations}
 The explicit prior substantially improves a direct GCN even when the prior
 alone transfers poorly. It supplies useful rank structure, while the learned
@@ -239,6 +366,41 @@ PyTorch 2.11.0 (CPU); Matplotlib 3.11.1; OSMnx 2.1.1; and GeoPandas 1.1.4.
 Hardware is an AMD64 Family 25 Model 68 system with 16 logical CPUs; CUDA was
 unavailable and no GPU was used. OSM data are copyright OpenStreetMap
 contributors under the ODbL~\cite{osm}.
+
+\appendix
+\section{End-to-end experimental protocol}
+For each seed, the pipeline executes the following fixed sequence:
+\begin{enumerate}
+\item generate connected synthetic base graphs and assign entire base-graph
+families to train, validation, or test;
+\item generate equal numbers of independent and spatial-cluster failures;
+\item compute intact $\lambda_2,u_2$, damaged $\lambda_2$, the exact target,
+and the first-order estimate;
+\item train direct-full, direct-no-Fiedler, direct-no-coordinate,
+residual-full, residual-no-Fiedler, residual-no-coordinate, Deep Sets, and
+summary-MLP models with identical partitions;
+\item evaluate every model separately on both synthetic processes and on each
+OSM site--process pair; and
+\item aggregate only after per-seed metrics have been calculated, then
+bootstrap seed indices and seed-paired differences 10,000 times.
+\end{enumerate}
+This order is encoded in \texttt{run\_paper\_benchmark.py} and
+\texttt{analyze\_paper\_results.py}. The wrapper
+\texttt{reproduce\_all.ps1} downloads or reuses OSM caches, runs seeds 11, 22,
+33, 44, and 55, records the environment, and compiles this report.
+
+\section{Output and claim audit}
+Machine-readable outputs include per-seed/per-mode metrics, bootstrap summaries,
+paired differences, error slices, runtimes, and environment versions. Raw model
+predictions and checkpoints are intentionally excluded from version control but
+can be regenerated. The public repository is
+\href{https://github.com/lee-vtruong/ResiliRoad}{https://github.com/lee-vtruong/ResiliRoad}.
+
+The evidence supports a narrow claim: an explicit residual spectral prior
+improves direct GCN calibration for the evaluated structural-disruption task.
+It does not support claims about flood probability, traffic service, city-wide
+robustness, or a universally necessary Fiedler node feature. This claim audit is
+included to keep poster-scale communication aligned with the actual experiment.
 
 \begin{thebibliography}{10}
 \bibitem{fiedler1973} M. Fiedler, \emph{Algebraic connectivity of graphs},
