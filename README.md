@@ -83,6 +83,7 @@ python analyze_journal_results.py
 python analyze_jcn2_results.py
 python collect_environment.py
 python create_method_overview.py
+python create_osm_triptych.py
 ```
 
 Repeat the benchmark for seeds `11`, `22`, `33`, `44`, and `55`. The wrapper
