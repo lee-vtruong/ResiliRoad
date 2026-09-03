@@ -22,20 +22,21 @@ Rapid evaluation of many simultaneous road-link disruptions requires a useful
 compromise between exact spectral recomputation and local approximation. We
 estimate the relative loss of algebraic connectivity after multi-edge deletion
 using graph neural networks (GNNs) that learn a bounded correction to a
-first-order Fiedler sensitivity. The design is tested under independent and
-spatially clustered failures, with graph-disjoint synthetic splits, zero-shot
-transfer to five OpenStreetMap (OSM) networks, and geographically blocked
-leave-one-area-out transfer. GCN and GraphSAGE backbones, feature ablations, and
-analytical or set-based baselines isolate the contribution of the residual
-prior, Fiedler node feature, coordinates, and message passing. All uncertainty is calculated from
-five seed-level replicates rather than treating correlated scenarios as
-independent. In synthetic-to-OSM zero-shot tests, residual learning reduces mean
-absolute error relative to a direct GCN by 0.0085 (95\% seed-bootstrap interval
-0.0039--0.0131) for independent failures and 0.0121 (0.0026--0.0247) for spatial
-failures. However, when models are trained on three OSM areas and tested on a
-held-out fourth, the direct GCN is more stable: its errors are 0.135 and 0.109,
-compared with 0.161 and 0.144 for the residual model. A reliability-context
-extension likewise improves synthetic performance but degrades OSM transfer.
+first-order Fiedler sensitivity. The design is tested under independent,
+spatially clustered, and edge-betweenness-targeted failures, with graph-disjoint
+synthetic splits and zero-shot transfer to 13 OpenStreetMap (OSM) areas in six
+countries (48--1,259 nodes). GCN, GraphSAGE, and explicitly edge-aware MPNN
+backbones, feature ablations, and first- and truncated second-order analytical
+baselines isolate the contribution of the residual prior. OSM uncertainty uses
+an area-clustered hierarchical bootstrap with seed nested within area, rather
+than treating seeds or scenarios as geographic replicates. Across the expanded
+OSM panel, residual GCN improves spatial-failure MAE by 0.0391 (95\% hierarchical
+interval 0.0151--0.0662), while residual GraphSAGE improves targeted-failure MAE
+by 0.0257 (0.0095--0.0446). Edge-MPNN residual differences are positive but
+imprecise. Second-order perturbation improves first-order MAE by only
+0.0028--0.0053. Correction slopes fall from 0.84--0.95 under independent or
+spatial transfer to 0.51--0.58 under targeted transfer for GCN/GraphSAGE,
+directly quantifying residual shrinkage around a biased anchor.
 Controlled sparse-eigensolver scaling extends to 20,000 nodes and separates one-time
 spectral setup, amortized cost, and update-only cost. These results identify the
 spectral residual as a useful but domain-sensitive inductive bias, and delimit
@@ -76,10 +77,10 @@ Rather than asking whether one new GNN architecture wins, the central thesis is
 \emph{when a mathematically informed spectral prior helps graph learning under
 distribution shift, and when it becomes a biased anchor}. The contributions
 are: (i) a bounded residual spectral construction for simultaneous edge
-deletions; (ii) controlled feature, GCN/GraphSAGE, and reliability-context
-ablations; (iii) two disruption processes on five cached OSM networks; (iv) both
+deletions; (ii) controlled feature, GCN/GraphSAGE/edge-MPNN, second-order, and reliability-context
+ablations; (iii) three disruption processes on 13 cached OSM networks in six countries; (iv) both
 synthetic-to-real zero-shot and geographically disjoint OSM transfer; (v)
-seed-paired bootstrap inference, calibration and failure-regime diagnostics; and
+area-clustered hierarchical inference, calibration, eigengap and correction diagnostics; and
 (vi) a benchmark separating eigensolver setup, amortized spectral evaluation,
 and update-only cost. Importantly, the transfer experiments reveal a limitation:
 the residual prior is not uniformly superior once OSM training data are
@@ -117,7 +118,7 @@ disruption, directly motivating learning-based rapid screening; their output is
 an edge ranking, whereas ours is a graph-level spectral-loss estimate. Boeing
 and Ha~\cite{boeingha2024} simulate 2.4 billion trips across more than 8,000
 urban areas in 178 countries, establishing an empirical scale far beyond our
-five local networks. Zang et al.~\cite{zang2024} predict dynamic traffic
+13 neighbourhood networks. Zang et al.~\cite{zang2024} predict dynamic traffic
 resilience under rainfall with a multi-granularity GNN; their functional,
 temporal target is complementary to our static structural target. Reviews
 distinguish connectivity, robustness, vulnerability, and recovery-based
@@ -178,6 +179,16 @@ and a two-layer head. The direct model predicts $y$; the residual model predicts
 The bounded correction concentrates capacity on finite-deletion error but can
 also inherit domain-specific bias from the prior.
 
+To answer whether learning is needed beyond a higher-order analytical model, a
+truncated perturbation baseline retains the 12 lowest Laplacian modes:
+\begin{equation}
+\Delta\lambda_2^{(2)}=u_2^\top\Delta L u_2+
+\sum_{k\ne2}\frac{|u_k^\top\Delta L u_2|^2}{\lambda_2-\lambda_k}.
+\end{equation}
+We also record the relative eigengap
+$\gamma=(\lambda_3-\lambda_2)/\lambda_2$, which measures proximity to the next
+mode but is not supplied to any learner.
+
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{../figures/method_overview.pdf}
@@ -199,20 +210,33 @@ architecture control, GraphSAGE concatenates each node state with a normalized
 neighbourhood aggregate before each of three learned transformations. Its direct
 and residual variants use the same features, pooling, optimizer, split, and
 stopping rule as the GCN.
+The edge-aware MPNN instead forms
+$m_{ij}=\phi(h_i,h_j,e_{ij})$ over every intact candidate link, where
+$e_{ij}$ contains normalized conductance, inverse-conductance length, a failed
+edge indicator, and normalized $(u_{2,i}-u_{2,j})^2$. Mean incoming messages
+update node states in three layers. Keeping failed links as candidates allows
+the model to observe deletion explicitly rather than only through damaged
+adjacency and node incidence.
 
 \section{Experimental design}
 \subsection{Synthetic graphs and disruption processes}
 Connected random geometric graphs contain 35--65 nodes and inverse-length edge
-conductance. Per seed, 800 scenarios are generated for each failure mode and
-entire base-graph families are assigned to train, validation, or test. Each
+conductance. The original two-mode experiment generates 800 scenarios per mode
+and seed; the expanded three-mode experiment generates 400 per mode and seed.
+Entire base-graph families are assigned to train, validation, or test. Each
 scenario removes one to eight edges. Independent failure samples edges uniformly.
 Spatial-cluster failure chooses a random epicentre and removes the required
 number of edges with nearest geometric midpoints. Both modes share the same
 failure-count distribution.
+The third regime samples without replacement with probability proportional to
+unweighted edge-betweenness centrality. It targets globally important links
+without using the Fiedler sensitivity that defines the analytical prior.
 
 \subsection{OpenStreetMap networks}
-OSMnx~\cite{boeing2017} was used to obtain 650-m drivable networks around five
-Vietnamese sites. Directed multigraphs were simplified, converted to undirected
+OSMnx~\cite{boeing2017} was used to obtain drivable networks around 13 areas in
+Vietnam, Singapore, Malaysia, Thailand, Taiwan, and Japan. Five 650-m
+neighbourhoods preserve the original evaluation; eight 1.2--1.6-km areas add
+larger and morphologically diverse networks. Directed multigraphs were simplified, converted to undirected
 simple graphs, and restricted to the largest connected component. Conductance
 is $100/\mathrm{length}_{\mathrm m}$. Cached GraphML freezes the exact instances
 because live OSM data evolve.
@@ -221,14 +245,16 @@ because live OSM data evolve.
 \centering
 \caption{OpenStreetMap networks used in the study.}
 \label{tab:osm}
-\begin{tabular}{lrrr}
-\toprule Site & Nodes & Edges & Density\\ \midrule
-HCMUS, Ho Chi Minh City&163&221&0.0167\\
-VIASM, Hanoi&206&301&0.0143\\
-Da Nang&142&203&0.0203\\
-Can Tho&114&178&0.0276\\
-Da Lat&48&55&0.0488\\ \bottomrule
-\end{tabular}
+\resizebox{\textwidth}{!}{\begin{tabular}{llrrrr}
+\toprule Area & Country & Radius (m)&Nodes & Edges & Density\\ \midrule
+HCMUS&Vietnam&650&163&221&.0167\\ VIASM&Vietnam&650&206&301&.0143\\
+Da Nang&Vietnam&650&142&203&.0203\\ Can Tho&Vietnam&650&114&178&.0276\\
+Da Lat&Vietnam&650&48&55&.0488\\ Singapore&Singapore&1,400&759&1,121&.00390\\
+Kuala Lumpur&Malaysia&1,500&730&1,059&.00398\\ George Town&Malaysia&1,600&936&1,334&.00305\\
+Bangkok&Thailand&1,400&1,072&1,457&.00254\\ Chiang Mai&Thailand&1,600&1,259&1,661&.00210\\
+Taipei&Taiwan&1,300&965&1,546&.00332\\ Kyoto&Japan&1,500&909&1,468&.00356\\
+Tokyo&Japan&1,200&1,108&1,675&.00273\\ \bottomrule
+\end{tabular}}
 \end{table}
 
 \begin{figure}[H]
@@ -250,12 +276,20 @@ next site in a fixed rotation is validation, and the remaining three sites are
 training. Forty scenarios per site and mode are generated for each of five
 seeds; the direct and residual GCNs train for at most 25 epochs. No base area is
 shared across train, validation, and test in a fold.
+An expanded zero-shot protocol trains GCN, GraphSAGE, and edge-MPNN direct and
+residual variants on 400 synthetic scenarios per failure mode and evaluates 20
+scenarios per area, mode, and seed across all 13 OSM areas. The original and
+expanded protocols are reported separately; the latter supplies geographic
+rather than merely random-seed replication.
 
 \subsection{Statistics, calibration, and runtime}
-Seeds 11, 22, 33, 44, and 55 are independent analysis units. MAE, RMSE,
-$R^2$, and Spearman correlation are first computed within seed. Confidence
-intervals resample the five seed-level statistics 10,000 times; comparisons
-bootstrap within-seed paired differences. No scenario-level $p$-value is used.
+For synthetic graph populations, seeds 11, 22, 33, 44, and 55 define independent
+generator replicates. For OSM, the road area is the outer sampling cluster and
+seed is nested within area. Hierarchical intervals resample areas with
+replacement and then one seed realization within each sampled area 10,000
+times. Paired comparisons preserve method pairing within area and seed. The
+five-area leave-one-area-out analysis is re-estimated with the same area-outer
+hierarchy. No scenario-level $p$-value is used.
 Continuous calibration is summarized by regressing target on prediction within
 each seed, reporting slope, intercept, and signed mean error. Error slices by
 connectivity, failure count, density/site, and spectral clipping are diagnostic.
@@ -297,21 +331,21 @@ node-feature necessity is therefore not established.
 \subsection{Geographically blocked transfer}
 \begin{table}[H]
 \centering
-\caption{Leave-one-area-out OSM performance, seed mean [95\% seed-bootstrap
-interval]. Each fold uses three training, one validation, and one test area.}
+\caption{Leave-one-area-out OSM performance, area mean [95\% hierarchical
+area-outer interval]. Each fold uses three training, one validation, and one test area.}
 \label{tab:loao}
 \begin{tabular}{lcc}
 \toprule Method&Independent MAE&Spatial-cluster MAE\\ \midrule
-Direct GCN&\textbf{.135 [.123,.145]}&\textbf{.109 [.106,.112]}\\
-Residual GCN&.161 [.118,.216]&.144 [.102,.198]\\ \bottomrule
+Direct GCN&\textbf{.135 [.089,.199]}&\textbf{.109 [.067,.158]}\\
+Residual GCN&.161 [.089,.319]&.144 [.059,.352]\\ \bottomrule
 \end{tabular}
 \end{table}
 
 The point-estimate ranking reverses when training is moved into the OSM domain. Direct GCN has
 mean $R^2$ 0.714 and 0.747, compared with 0.550 and 0.529 for the residual
 model. The paired residual-minus-direct MAE differences are 0.0261
-[-0.0122, 0.0824] and 0.0350 [-0.0093, 0.0900]; both intervals include zero,
-so five seeds do not establish direct-model superiority. Residual performance is seed-sensitive: independent-failure MAE ranges
+[-0.0357, 0.1572] and 0.0350 [-0.0479, 0.2320]; both area-outer intervals include zero,
+so five areas do not establish direct-model superiority. Residual performance is seed-sensitive: independent-failure MAE ranges
 from 0.092 to 0.265. Calibration explains part of this instability. Direct-GCN
 slopes stay between 0.91 and 1.06; residual slopes fall to 0.58 and 0.69 in the
 two poorest seeds, with substantial underprediction. Thus the spectral prior is
@@ -326,18 +360,6 @@ failure (negative means improvement). It increases zero-shot OSM spatial MAE by
 0.0304 [0.0067, 0.0579]; the independent increase is 0.0452
 [-0.0029, 0.1019]. Simple reliability metadata therefore encourages
 distribution-specific calibration rather than robust transfer.
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=.96\textwidth]{../outputs/journal_summary/transfer_and_ablation.pdf}
-\caption{Transfer and negative-ablation results. (a) Leave-one-area-out OSM
-MAE. (b) MAE change caused by reliability context; positive values favour
-residual-full. Error bars are 95\% seed-bootstrap intervals.}
-\label{fig:transfer}
-\par\small\textit{Alt text: Two large panels show lower leave-one-area-out
-point estimates for direct GCN and reliability context improving synthetic
-spatial data but worsening both OSM conditions.}
-\end{figure}
 
 \subsection{Backbone robustness}
 Replacing GCN propagation with GraphSAGE tests whether the main conclusion is
@@ -362,6 +384,62 @@ OSM&Spatial&.102 [.077,.148]&.090 [.071,.124]&.113 [.082,.164]&\textbf{.089 [.07
 \end{tabular}}
 \end{table}
 
+\subsection{Cross-country, targeted, and edge-aware evaluation}
+Table~\ref{tab:expanded} reports the expanded 13-area experiment. Positive
+paired differences favour the residual formulation. Residual point estimates
+improve all nine backbone--failure combinations, but area-level uncertainty is
+material: intervals exclude zero only for GCN under spatial failure and
+GraphSAGE under independent and targeted failure. The edge-aware MPNN does not
+outperform the node-message-passing models; for example, its residual MAE is
+.163, .199, and .156, compared with residual-GCN MAE .085, .057, and .135.
+Thus explicit failed-edge attributes are an architecture control, not an
+automatic accuracy gain.
+
+\begin{table}[htbp]
+\centering\small
+\caption{Expanded zero-shot OSM paired improvement (direct minus residual
+MAE), area mean [95\% hierarchical interval].}
+\label{tab:expanded}
+\resizebox{\textwidth}{!}{\begin{tabular}{lccc}
+\toprule Backbone&Independent&Spatial cluster&Targeted betweenness\\ \midrule
+GCN&.0167 [-.0019,.0338]&\textbf{.0391 [.0151,.0662]}&.0097 [-.0095,.0268]\\
+GraphSAGE&\textbf{.0253 [.0114,.0425]}&.0159 [-.0043,.0365]&\textbf{.0257 [.0095,.0446]}\\
+Edge-MPNN&.0042 [-.1210,.1227]&.0128 [-.1489,.1575]&.0359 [-.0412,.1113]\\ \bottomrule
+\end{tabular}}
+\end{table}
+
+\subsection{Eigengap, analytical order, and learned correction}
+The truncated second-order perturbation baseline improves over first order by
+.00284 [.00050,.00673], .00359 [.00081,.00756], and .00533
+[.00133,.01187] MAE under independent, spatial, and targeted disruption,
+respectively. These gains are consistent but too small to close the gap to the
+best learned estimators, answering why a learned correction remains useful.
+
+The relative eigengap $\gamma=(\lambda_3-\lambda_2)/\lambda_2$ is informative
+but not a sufficient gate. First-order OSM MAE is .444, .369, and .422 in low,
+middle, and high graph-level eigengap tertiles: near-degeneracy is harder than
+the middle tertile, but the relationship is non-monotone. Residual improvement
+also does not vanish uniformly at small gaps.
+
+Mechanistic correction diagnostics support a more specific biased-anchor
+interpretation. Under targeted transfer, regression slopes of learned on
+needed correction are .512 (GCN), .580 (GraphSAGE), and .486 (edge-MPNN),
+compared with .843, .834, and .617 under independent failure. The residual
+therefore tends to shrink the correction precisely in the targeted regime,
+rather than fully undoing a miscalibrated analytical anchor.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=.96\textwidth]{../outputs/jcn2_summary/jcn2_diagnostics.pdf}
+\caption{Expanded diagnostic results. (a) Area-level direct-minus-residual MAE
+with hierarchical intervals. (b) first- and second-order spectral error across
+relative-eigengap tertiles. (c) learned versus needed residual correction.}
+\label{fig:jcn2}
+\par\small\textit{Alt text: Three panels compare residual improvements across
+backbones and disruptions, spectral errors across eigengap groups, and the
+calibration of learned corrections against ideal corrections.}
+\end{figure}
+
 \subsection{Runtime and error regimes}
 On the five small OSM networks, exact dense eigendecomposition averages
 5.094 ms per scenario, first-order update 0.018 ms, and residual inference
@@ -375,7 +453,8 @@ complexity proof.
 
 To test the actual screening motivation, a second sparse benchmark uses
 connected planar road-like graphs with 1,000, 2,000, 5,000, 10,000, and 20,000
-nodes and about 2.1 edges per node. Nodes occupy a normalized, near-square
+nodes, with edge-to-node ratio $|E|/|V|\approx2.1$, corresponding to mean
+degree $\bar d\approx4.2$. Nodes occupy a normalized, near-square
 regular lattice. Horizontal and vertical nearest-neighbour edges form a
 connected truncated grid; each eligible cell independently receives its
 northwest diagonal with probability 0.12, which preserves planarity. Edge
@@ -413,8 +492,9 @@ being removed as outliers.
 
 \section{Discussion}
 The central result is a condition, not a new-architecture claim. A spectral
-residual improves both GCN and GraphSAGE on graph-disjoint synthetic tests and
-usually when transferred zero-shot to OSM. It combines the prior's ranking
+residual improves point estimates for GCN, GraphSAGE, and edge-MPNN on the
+expanded zero-shot OSM test, although only three of nine area-level intervals
+exclude zero. It combines the prior's ranking
 signal with learned nonlinear calibration. However, blocked OSM transfer and
 reliability-context ablation show that the same inductive bias can amplify
 domain-specific error. The prior then behaves as a shortcut or biased anchor:
@@ -427,19 +507,27 @@ The study also separates the explicit prior from Fiedler node information.
 Neither Fiedler nor coordinate removal produces a stable loss, whereas replacing
 the residual architecture does. The robust ingredient in the first protocol is
 therefore how mathematical and learned estimates are combined, not merely the
-presence of an eigenvector channel. The poor Deep Sets ranking in several
+presence of an eigenvector channel. Targeted-failure correction slopes show
+that a biased anchor is a measurable calibration failure, while the
+non-monotone eigengap result warns against using eigengap alone as a trust
+rule. The poor Deep Sets ranking in several
 regimes supports adjacency-aware propagation, while the summary MLP shows that
 coarse graph statistics are insufficient.
 
 \subsection{Limitations}
-Five 650-m Vietnamese neighbourhoods do not establish city-scale or
-cross-country predictive generality. Their size and density are confounded. The
+Thirteen purposively selected neighbourhoods in six Asian countries improve
+geographic and morphological coverage but do not establish global or
+city-scale predictive generality; they span only 48--1,259 nodes. Their size,
+density, country, and morphology remain partly confounded. The
 synthetic geometric generator and large-scaling graphs are controlled proxies,
 not metropolitan OSM accuracy datasets. Spatial clusters are not calibrated to flood,
 landslide, earthquake, construction, or conflict data. Algebraic connectivity
 is structural: it omits direction, demand, congestion, capacity, travel time,
-accessibility, and restoration. Only five seed replicates limit precision, and
-no probabilistic predictive intervals are produced. Sparse batched neural
+accessibility, and restoration. Only five seed realizations per area limit
+within-area precision, while 13 areas limit geographic inference. The
+hierarchical analysis correctly treats area as the outer unit, but cannot
+compensate for purposive selection. No probabilistic predictive intervals are
+produced. Sparse batched neural
 implementations and spectral sparsification~\cite{spielman2011} may change
 runtime rankings at still larger scale.
 
@@ -454,10 +542,12 @@ replication rather than inflate sample size with correlated scenarios.
 \section{Conclusion}
 Residual spectral graph learning offers an interpretable, fast estimator of
 finite multi-edge connectivity loss, but its advantage depends on training
-domain. The method beats direct GCN and GraphSAGE under graph-disjoint synthetic
-and most synthetic-to-OSM zero-shot evaluations; direct GCN is more stable under blocked
+domain. The method improves point estimates across GCN, GraphSAGE, and
+edge-MPNN in the expanded zero-shot study, with area-level support in three of
+nine conditions; direct GCN is more stable under blocked
 OSM-to-OSM transfer. Reporting both outcomes, along with ablations, hierarchical
-uncertainty, calibration, error cases, and separated runtime costs, provides a
+uncertainty, targeted attacks, eigengap and second-order controls, correction
+calibration, error cases, and separated runtime costs, provides a
 reproducible account of when a Fiedler prior helps and when it does not.
 
 \section*{Data and code availability}
@@ -491,7 +581,14 @@ logical AMD64 CPUs; CUDA was unavailable. Scripts record exact seeds and emit
 scenario predictions, training histories, fold assignments, runtime summaries,
 bootstrap tables, calibration diagnostics, and worst cases.
 The architecture-control runs use identical data and training settings for GCN
-and GraphSAGE. Large-scale runtime graphs use a normalized near-square lattice,
+and GraphSAGE. Expanded runs add an edge-MPNN whose directed messages receive
+normalized conductance, inverse-conductance length, failed-edge status, and
+normalized squared Fiedler difference. Targeted scenarios sample without
+replacement in proportion to intact-graph edge betweenness. For each OSM area,
+20 scenarios per mode and seed are evaluated; hierarchical resampling uses area
+as the outer cluster and seed within area. Second-order perturbation uses the
+lowest 12 Laplacian modes, and eigengap tertiles are assigned at graph level.
+Large-scale runtime graphs use a normalized near-square lattice,
 four-neighbour grid backbone, independent northwest diagonals with probability
 0.12, and inverse-length conductance; the deterministic grid guarantees a
 connected base graph and yields mean degree approximately 4.2. Sparse

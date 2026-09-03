@@ -24,6 +24,8 @@ CONFIGS = {
     "residual_no_coordinates": dict(model_kind="gcn", use_fiedler=True, use_coordinates=False, residual=True),
     "direct_sage": dict(model_kind="sage", use_fiedler=True, use_coordinates=True, residual=False),
     "residual_sage": dict(model_kind="sage", use_fiedler=True, use_coordinates=True, residual=True),
+    "direct_edge_mpnn": dict(model_kind="edge_mpnn", use_fiedler=True, use_coordinates=True, residual=False),
+    "residual_edge_mpnn": dict(model_kind="edge_mpnn", use_fiedler=True, use_coordinates=True, residual=True),
     "deepsets": dict(model_kind="deepsets", use_fiedler=True, use_coordinates=True, residual=False),
     "summary_mlp": dict(model_kind="mlp", use_fiedler=True, use_coordinates=True, residual=False),
 }
@@ -50,6 +52,9 @@ def scenario_frame(data, prediction, model, domain):
     return pd.DataFrame({
         "target": [x.target for x in data], "prediction": prediction,
         "spectral": [x.spectral_prediction for x in data],
+        "spectral_second_order": [x.second_order_prediction for x in data],
+        "relative_eigengap": [x.relative_eigengap for x in data],
+        "graph_id": [x.graph_id for x in data],
         "failed_count": [x.failed_count for x in data],
         "failure_mode": [x.failure_mode for x in data],
         "connected": [x.damaged_connected for x in data],
@@ -62,13 +67,16 @@ def scenario_frame(data, prediction, model, domain):
 def main():
     args = parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
-    modes = ("independent", "spatial_cluster")
+    modes = ("independent", "spatial_cluster", "targeted")
     synthetic_parts = [
         generate_dataset(args.synthetic_per_mode, seed=args.seed, failure_mode=mode)
         for mode in modes
     ]
-    synthetic = synthetic_parts[0] + synthetic_parts[1]
-    train, validation, synthetic_test = split_by_graph(synthetic, seed=args.seed)
+    split_parts = [split_by_graph(part, seed=args.seed) for part in synthetic_parts]
+    train = sum((part[0] for part in split_parts), [])
+    validation = sum((part[1] for part in split_parts), [])
+    synthetic_test = sum((part[2] for part in split_parts), [])
+    synthetic = sum(synthetic_parts, [])
 
     manifest = json.loads(args.osm_manifest.read_text(encoding="utf-8"))
     osm_sets = {}
@@ -137,6 +145,9 @@ def main():
         prediction = np.array([x.spectral_prediction for x in dataset])
         result[f"spectral_{domain}"] = metrics(target, prediction)
         frames.append(scenario_frame(dataset, prediction, "spectral", domain))
+        second_order = np.array([x.second_order_prediction for x in dataset])
+        result[f"spectral_second_order_{domain}"] = metrics(target, second_order)
+        frames.append(scenario_frame(dataset, second_order, "spectral_second_order", domain))
 
     (args.output / "metrics.json").write_text(json.dumps(result, indent=2), encoding="utf-8")
     pd.concat(frames, ignore_index=True).to_csv(args.output / "predictions.csv", index=False)

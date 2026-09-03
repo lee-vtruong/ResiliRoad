@@ -8,7 +8,8 @@ import networkx as nx
 import numpy as np
 import torch
 
-from .spectral import algebraic_connectivity, edge_sensitivity, fiedler_data, relative_drop
+from .spectral import (algebraic_connectivity, edge_sensitivity, relative_drop,
+                       second_order_relative_loss, spectral_prior_data)
 
 
 @dataclass
@@ -26,11 +27,23 @@ class Scenario:
     area: str = "synthetic"
     exact_seconds: float = 0.0
     spectral_seconds: float = 0.0
+    second_order_prediction: float = 0.0
+    relative_eigengap: float = float("nan")
+    edge_index: torch.Tensor | None = None
+    edge_attr: torch.Tensor | None = None
 
 
 def _sample_failed_edges(graph, edges, count, rng, py_rng, mode):
     if mode == "independent":
         return py_rng.sample(edges, count)
+    if mode == "targeted":
+        centrality = graph.graph.get("_edge_betweenness")
+        if centrality is None:
+            centrality = nx.edge_betweenness_centrality(graph, normalized=True, weight=None)
+            graph.graph["_edge_betweenness"] = centrality
+        scores = np.array([centrality.get(edge, centrality.get((edge[1], edge[0]), 0.0)) for edge in edges])
+        probabilities = (scores + 1e-12) / (scores.sum() + 1e-12 * len(scores))
+        return [edges[i] for i in rng.choice(len(edges), count, replace=False, p=probabilities)]
     if mode != "spatial_cluster":
         raise ValueError(f"Unknown failure mode: {mode}")
     positions = nx.get_node_attributes(graph, "pos")
@@ -69,12 +82,41 @@ def _connected_geometric_graph(rng: np.random.Generator, n: int) -> nx.Graph:
 
 def _normalized_adjacency(graph: nx.Graph) -> torch.Tensor:
     nodes = sorted(graph.nodes())
+    if len(nodes) > 400:
+        adjacency = nx.to_scipy_sparse_array(graph, nodelist=nodes, weight="weight",
+                                             dtype=np.float32, format="csr")
+        adjacency.setdiag(adjacency.diagonal() + 1)
+        degree = np.asarray(adjacency.sum(axis=1)).ravel()
+        inv = np.maximum(degree, 1e-12) ** -0.5
+        normalized = adjacency.multiply(inv[:, None]).multiply(inv[None, :]).tocoo()
+        indices = torch.tensor(np.vstack([normalized.row, normalized.col]), dtype=torch.long)
+        values = torch.tensor(normalized.data, dtype=torch.float32)
+        return torch.sparse_coo_tensor(
+            indices, values, normalized.shape, check_invariants=False
+        ).coalesce()
     a = nx.to_numpy_array(graph, nodelist=nodes, weight="weight", dtype=np.float32)
     a += np.eye(len(nodes), dtype=np.float32)
     degree = a.sum(axis=1)
     inv_sqrt = np.power(np.maximum(degree, 1e-12), -0.5)
     normalized = inv_sqrt[:, None] * a * inv_sqrt[None, :]
     return torch.from_numpy(normalized)
+
+
+def _edge_tensors(graph, failed, fiedler):
+    failed_set = {tuple(sorted(edge)) for edge in failed}
+    weights = np.array([graph[u][v]["weight"] for u, v in graph.edges()], dtype=float)
+    max_weight = max(float(weights.max()), 1e-12)
+    lengths = 1.0 / np.maximum(weights, 1e-12)
+    max_length = max(float(lengths.max()), 1e-12)
+    sensitivities = np.array([(fiedler[u] - fiedler[v]) ** 2 for u, v in graph.edges()])
+    max_sensitivity = max(float(sensitivities.max()), 1e-12)
+    indices, attributes = [], []
+    for (u, v), weight, length, sensitivity in zip(graph.edges(), weights, lengths, sensitivities):
+        attr = [weight / max_weight, length / max_length,
+                float(tuple(sorted((u, v))) in failed_set), sensitivity / max_sensitivity]
+        indices.extend([(u, v), (v, u)]); attributes.extend([attr, attr])
+    return (torch.tensor(indices, dtype=torch.long).T.contiguous(),
+            torch.tensor(attributes, dtype=torch.float32))
 
 
 def generate_dataset(
@@ -92,7 +134,8 @@ def generate_dataset(
     while len(scenarios) < samples:
         n = int(rng.integers(min_nodes, max_nodes + 1))
         graph = _connected_geometric_graph(rng, n)
-        base_lambda2, fiedler = fiedler_data(graph)
+        values, vectors, fiedler, eigengap = spectral_prior_data(graph)
+        base_lambda2 = float(values[1])
         if base_lambda2 <= 1e-8:
             continue
         degrees = dict(graph.degree())
@@ -119,6 +162,8 @@ def generate_dataset(
             )
             spectral_seconds = perf_counter() - spectral_started
             spectral_prediction = float(np.clip(first_order_loss / base_lambda2, 0.0, 1.0))
+            second_order = second_order_relative_loss(graph, failed, values, vectors)
+            edge_index, edge_attr = _edge_tensors(graph, failed, fiedler)
 
             failed_incident = {node: 0 for node in graph.nodes()}
             for u, v in failed:
@@ -148,6 +193,8 @@ def generate_dataset(
                 spectral_clipped=first_order_loss / base_lambda2 >= 1.0,
                 exact_seconds=exact_seconds,
                 spectral_seconds=spectral_seconds,
+                second_order_prediction=second_order, relative_eigengap=eigengap,
+                edge_index=edge_index, edge_attr=edge_attr,
             ))
         graph_id += 1
     return scenarios
@@ -167,7 +214,8 @@ def generate_scenarios_for_graph(
     graph = nx.convert_node_labels_to_integers(graph.copy())
     rng = np.random.default_rng(seed)
     py_rng = random.Random(seed)
-    base_lambda2, fiedler = fiedler_data(graph)
+    values, vectors, fiedler, eigengap = spectral_prior_data(graph)
+    base_lambda2 = float(values[1])
     if base_lambda2 <= 1e-8:
         raise ValueError("Input graph has numerically zero algebraic connectivity")
     degrees = dict(graph.degree())
@@ -193,6 +241,8 @@ def generate_scenarios_for_graph(
             for u, v in failed
         )
         spectral_seconds = perf_counter() - spectral_started
+        second_order = second_order_relative_loss(graph, failed, values, vectors)
+        edge_index, edge_attr = _edge_tensors(graph, failed, fiedler)
         failed_incident = {node: 0 for node in graph.nodes()}
         for u, v in failed:
             failed_incident[u] += 1
@@ -220,5 +270,7 @@ def generate_scenarios_for_graph(
             area=area,
             exact_seconds=exact_seconds,
             spectral_seconds=spectral_seconds,
+            second_order_prediction=second_order, relative_eigengap=eigengap,
+            edge_index=edge_index, edge_attr=edge_attr,
         ))
     return scenarios

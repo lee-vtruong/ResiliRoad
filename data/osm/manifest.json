@@ -5,6 +5,7 @@
     "latitude": 10.7626,
     "longitude": 106.6822,
     "radius_m": 650,
+    "country": "Vietnam",
     "nodes": 163,
     "edges": 221,
     "density": 0.01673862001060365
@@ -15,6 +16,7 @@
     "latitude": 21.0156,
     "longitude": 105.8019,
     "radius_m": 650,
+    "country": "Vietnam",
     "nodes": 206,
     "edges": 301,
     "density": 0.014255268766279895
@@ -25,6 +27,7 @@
     "latitude": 16.0678,
     "longitude": 108.2208,
     "radius_m": 650,
+    "country": "Vietnam",
     "nodes": 142,
     "edges": 203,
     "density": 0.020277694536010388
@@ -35,6 +38,7 @@
     "latitude": 10.034,
     "longitude": 105.788,
     "radius_m": 650,
+    "country": "Vietnam",
     "nodes": 114,
     "edges": 178,
     "density": 0.027635460332246547
@@ -45,8 +49,97 @@
     "latitude": 11.9404,
     "longitude": 108.4583,
     "radius_m": 650,
+    "country": "Vietnam",
     "nodes": 48,
     "edges": 55,
     "density": 0.04875886524822695
+  },
+  {
+    "name": "singapore",
+    "path": "data\\osm\\singapore_1400m_drive.graphml",
+    "latitude": 1.3008,
+    "longitude": 103.8515,
+    "radius_m": 1400,
+    "country": "Singapore",
+    "nodes": 759,
+    "edges": 1121,
+    "density": 0.0038969481438220683
+  },
+  {
+    "name": "kuala_lumpur",
+    "path": "data\\osm\\kuala_lumpur_1500m_drive.graphml",
+    "latitude": 3.1478,
+    "longitude": 101.6953,
+    "radius_m": 1500,
+    "country": "Malaysia",
+    "nodes": 730,
+    "edges": 1059,
+    "density": 0.003979931224984497
+  },
+  {
+    "name": "george_town",
+    "path": "data\\osm\\george_town_1600m_drive.graphml",
+    "latitude": 5.4141,
+    "longitude": 100.3288,
+    "radius_m": 1600,
+    "country": "Malaysia",
+    "nodes": 936,
+    "edges": 1334,
+    "density": 0.003048585401526578
+  },
+  {
+    "name": "bangkok",
+    "path": "data\\osm\\bangkok_1400m_drive.graphml",
+    "latitude": 13.7563,
+    "longitude": 100.5018,
+    "radius_m": 1400,
+    "country": "Thailand",
+    "nodes": 1072,
+    "edges": 1457,
+    "density": 0.0025380799085803476
+  },
+  {
+    "name": "chiang_mai",
+    "path": "data\\osm\\chiang_mai_1600m_drive.graphml",
+    "latitude": 18.7883,
+    "longitude": 98.9853,
+    "radius_m": 1600,
+    "country": "Thailand",
+    "nodes": 1259,
+    "edges": 1661,
+    "density": 0.002097457921407835
+  },
+  {
+    "name": "taipei",
+    "path": "data\\osm\\taipei_1300m_drive.graphml",
+    "latitude": 25.0478,
+    "longitude": 121.5319,
+    "radius_m": 1300,
+    "country": "Taiwan",
+    "nodes": 965,
+    "edges": 1546,
+    "density": 0.0033238019478425388
+  },
+  {
+    "name": "kyoto",
+    "path": "data\\osm\\kyoto_1500m_drive.graphml",
+    "latitude": 35.0116,
+    "longitude": 135.7681,
+    "radius_m": 1500,
+    "country": "Japan",
+    "nodes": 909,
+    "edges": 1468,
+    "density": 0.0035571839122238214
+  },
+  {
+    "name": "tokyo",
+    "path": "data\\osm\\tokyo_1200m_drive.graphml",
+    "latitude": 35.6896,
+    "longitude": 139.7006,
+    "radius_m": 1200,
+    "country": "Japan",
+    "nodes": 1108,
+    "edges": 1675,
+    "density": 0.0027312246648338928
   }
 ]

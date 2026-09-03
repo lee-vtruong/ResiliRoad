@@ -1,5 +1,5 @@
-\documentclass[11pt]{letter}
-\usepackage[a4paper,margin=28mm]{geometry}
+\documentclass[10pt]{letter}
+\usepackage[a4paper,margin=23mm]{geometry}
 \usepackage[hidelinks]{hyperref}
 \setlength{\emergencystretch}{2em}
 \signature{Van-Truong Le\\Corresponding author\\ORCID: 0009-0008-7015-7392}
@@ -18,11 +18,12 @@ The paper studies a structural problem at the intersection of network spectra,
 spatial infrastructure networks, and graph machine learning. Its central
 contribution is a hybrid estimator that learns only the finite-perturbation
 residual of an interpretable Fiedler edge-sensitivity approximation. The design
-is evaluated with both GCN and GraphSAGE backbones under independent and spatially correlated edge failures, with
-graph-disjoint synthetic tests, five OpenStreetMap networks, geographically
-blocked leave-one-area-out transfer, feature and architecture ablations,
-seed-level paired bootstrap intervals, error-stratified analysis, and controlled
-computational scaling to 20,000 nodes. The main question is when an analytical
+is evaluated with GCN, GraphSAGE, and edge-aware MPNN backbones under
+independent, spatially correlated, and targeted-betweenness edge failures, with
+graph-disjoint synthetic tests, 13 OpenStreetMap areas in six countries,
+geographically blocked transfer, architecture ablations, area-clustered
+hierarchical intervals, eigengap and second-order controls, correction
+diagnostics, and scaling to 20,000 nodes. The main question is when an analytical
 prior helps under distribution shift and when it becomes a biased anchor. A
 reliability-context extension that failed to transfer
 is reported transparently as a negative ablation.

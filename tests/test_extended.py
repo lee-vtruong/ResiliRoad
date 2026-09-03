@@ -2,9 +2,11 @@ from pathlib import Path
 import unittest
 
 import networkx as nx
+import numpy as np
 import torch
 
-from resilience.model import ScenarioGCN, ScenarioGraphSAGE
+from resilience.data import generate_dataset
+from resilience.model import ScenarioEdgeMPNN, ScenarioGCN, ScenarioGraphSAGE
 from resilience.osm import load_preprocessed_network
 
 
@@ -46,6 +48,20 @@ class ExtendedModelTests(unittest.TestCase):
         self.assertGreaterEqual(direct, 0.0)
         self.assertLessEqual(direct, 1.0)
         self.assertAlmostEqual(corrected, 0.37, places=6)
+
+    def test_edge_mpnn_and_spectral_diagnostics_are_available(self):
+        item = generate_dataset(6, seed=91, failure_mode="targeted")[0]
+        self.assertEqual(item.edge_index.shape[0], 2)
+        self.assertEqual(item.edge_attr.shape[1], 4)
+        self.assertTrue(np.isfinite(item.relative_eigengap))
+        self.assertGreaterEqual(item.second_order_prediction, 0.0)
+        self.assertLessEqual(item.second_order_prediction, 1.0)
+        model = ScenarioEdgeMPNN(input_dim=5, residual=True).eval()
+        with torch.no_grad():
+            value = model(item.x, item.adjacency, torch.tensor(item.spectral_prediction),
+                          edge_index=item.edge_index, edge_attr=item.edge_attr)
+        self.assertGreaterEqual(float(value), 0.0)
+        self.assertLessEqual(float(value), 1.0)
 
 
 if __name__ == "__main__":

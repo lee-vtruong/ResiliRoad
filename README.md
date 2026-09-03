@@ -12,17 +12,20 @@ correction.
 
 ## Main findings
 
-The study uses five random seeds, graph-disjoint synthetic splits, independent
-and spatially clustered disruptions, zero-shot transfer to five Vietnamese
-OpenStreetMap networks, and geographically blocked leave-one-area-out transfer.
+The study uses five random seeds, graph-disjoint synthetic splits, independent,
+spatially clustered, and targeted-betweenness disruptions, and zero-shot
+transfer to 13 OpenStreetMap areas across six Asian countries. OSM uncertainty
+uses a hierarchical bootstrap with area as the outer cluster and seed nested
+within area.
 
 | OSM failure process | Direct GCN MAE | Residual GCN MAE | Paired improvement [95% CI] |
 |---|---:|---:|---:|
-| Independent | 0.106 | 0.097 | 0.0085 [0.0039, 0.0131] |
-| Spatial cluster | 0.102 | 0.090 | 0.0121 [0.0026, 0.0247] |
+| Independent | 0.102 | 0.085 | 0.0167 [-0.0019, 0.0338] |
+| Spatial cluster | 0.096 | 0.057 | 0.0391 [0.0151, 0.0662] |
+| Targeted betweenness | 0.145 | 0.135 | 0.0097 [-0.0095, 0.0268] |
 
-Bootstrap intervals resample seed-level metrics rather than treating correlated
-scenarios as independent observations. Fiedler-feature and coordinate ablations
+Synthetic intervals resample seeds; OSM intervals resample areas and then
+seeds, never treating correlated scenarios as independent. Fiedler-feature and coordinate ablations
 are inconclusive with five seeds; the stable improvement comes from using the
 analytical estimate as an explicit residual prior.
 
@@ -34,27 +37,28 @@ are trained on three OSM areas, validated on a fourth, and tested on a fifth,
 the direct GCN is more stable than the residual GCN (MAE 0.135 vs 0.161 for
 independent and 0.109 vs 0.144 for spatial failures). The repository therefore
 does not claim that the spectral residual is universally superior. The paired
-five-seed intervals include zero, so this reversal is a caution about stability
+area-outer hierarchical intervals include zero, so this reversal is a caution about stability
 and domain shift rather than a confirmed direct-GCN advantage.
 
-The conclusion is not tied to vanilla GCN: direct and residual GraphSAGE were
-run with the same data and optimization protocol. Residual GraphSAGE improves
+The conclusion is not tied to vanilla GCN: direct and residual GraphSAGE and
+edge-aware MPNN models were run with the same data and optimization protocol. Residual GraphSAGE improves
 paired MAE on both synthetic modes and OSM-independent transfer; the OSM-spatial
 interval includes zero. A sparse CPU benchmark reaches 20,000 nodes, where
 exact recomputation takes 1.302 s per scenario versus 23.17 ms for the
 amortized spectral-prior plus sparse-GNN path when screening 1,000 scenarios.
+The expanded study also includes a truncated second-order perturbation baseline,
+eigengap-stratified errors, and calibration of learned versus needed corrections.
 
 ## Methods compared
 
 - exact post-disruption eigendecomposition as ground truth;
-- first-order Fiedler spectral approximation;
-- direct and residual GCNs and GraphSAGE models;
+- first- and truncated second-order Fiedler perturbation approximations;
+- direct and residual GCN, GraphSAGE, and edge-aware MPNN models;
 - GCN ablations without the Fiedler node feature or coordinates;
 - Deep Sets and graph-summary MLP baselines.
 
-The OSM evaluation covers HCMUS (Ho Chi Minh City), VIASM (Hanoi), Da Nang,
-Can Tho, and Da Lat. Their cached graphs range from 48 to 206 nodes and densities
-from 0.0143 to 0.0488.
+The OSM evaluation covers 13 areas in Vietnam, Singapore, Malaysia, Thailand,
+Taiwan, and Japan. Cached graphs range from 48 to 1,259 nodes.
 
 ## Reproduce the paper
 
@@ -76,6 +80,7 @@ python run_scaling_benchmark.py
 python run_large_scaling_benchmark.py
 python run_geographic_transfer.py --seed 11 --scenarios-per-site-mode 40 --epochs 25 --output outputs/geographic_transfer/seed_11
 python analyze_journal_results.py
+python analyze_jcn2_results.py
 python collect_environment.py
 python create_method_overview.py
 ```
@@ -93,6 +98,8 @@ script performs this loop and compiles the paper.
 - [`data/osm/`](data/osm/) - cached OSM graphs and download manifest.
 - [`outputs/paper_summary/`](outputs/paper_summary/) - bootstrap metrics, paired
   differences, error analysis, runtime, and environment metadata.
+- [`outputs/jcn2_summary/`](outputs/jcn2_summary/) - area-clustered expanded
+  results, eigengap analysis, correction diagnostics, and analytical controls.
 - [`docs/EXPERIMENT_MATRIX.md`](docs/EXPERIMENT_MATRIX.md) - preregistered
   experiment and claim matrix.
 

@@ -22,6 +22,11 @@ outputs/paper_smoke/
 outputs/journal/
 outputs/journal_smoke/
 outputs/journal_arch/
+outputs/jcn2/
+outputs/jcn2_summary/all_predictions.csv
+outputs/jcn2_pilot/
+outputs/edge_smoke*/
+outputs/edge_debug/
 journal/output/rendered/
 outputs/geographic_transfer/
 outputs/geographic_transfer_smoke/

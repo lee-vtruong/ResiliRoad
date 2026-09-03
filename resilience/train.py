@@ -9,7 +9,8 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from scipy.stats import spearmanr
 
 from .data import Scenario
-from .model import DeepSetsRegressor, ScenarioGCN, ScenarioGraphSAGE, SummaryMLP
+from .model import (DeepSetsRegressor, ScenarioEdgeMPNN, ScenarioGCN,
+                    ScenarioGraphSAGE, SummaryMLP)
 
 
 def split_by_graph(data: list[Scenario], seed: int = 42):
@@ -58,6 +59,8 @@ def _predict(
                 torch.tensor([item.spectral_prediction, item.failed_count / 8.0,
                               item.base_density * 20.0, item.x.shape[0] / 200.0],
                              dtype=torch.float32, device=device),
+                edge_index=None if item.edge_index is None else item.edge_index.to(device),
+                edge_attr=None if item.edge_attr is None else item.edge_attr.to(device),
             ).cpu().item()
             for item in data
         ])
@@ -89,6 +92,10 @@ def train_model(
         if reliability_aware:
             raise ValueError("GraphSAGE baseline does not use reliability context")
         model = ScenarioGraphSAGE(input_dim=input_dim, residual=residual).to(device)
+    elif model_kind == "edge_mpnn":
+        if reliability_aware:
+            raise ValueError("EdgeMPNN baseline does not use reliability context")
+        model = ScenarioEdgeMPNN(input_dim=input_dim, residual=residual).to(device)
     elif model_kind == "deepsets":
         if residual:
             raise ValueError("Deep Sets baseline does not use residual mode")
@@ -119,6 +126,8 @@ def train_model(
                 torch.tensor([item.spectral_prediction, item.failed_count / 8.0,
                               item.base_density * 20.0, item.x.shape[0] / 200.0],
                              dtype=torch.float32, device=device),
+                edge_index=None if item.edge_index is None else item.edge_index.to(device),
+                edge_attr=None if item.edge_attr is None else item.edge_attr.to(device),
             )
             target = torch.tensor(item.target, dtype=torch.float32, device=device)
             loss = loss_fn(prediction, target)

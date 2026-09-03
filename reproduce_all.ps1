@@ -24,6 +24,17 @@ foreach ($seed in 11, 22, 33, 44, 55) {
 }
 
 python analyze_journal_results.py
+
+foreach ($seed in 11, 22, 33, 44, 55) {
+    python run_paper_benchmark.py `
+        --seed $seed `
+        --synthetic-per-mode 400 `
+        --osm-per-site-mode 20 `
+        --epochs 40 `
+        --output "outputs/jcn2/seed_$seed"
+}
+
+python analyze_jcn2_results.py
 python collect_environment.py
 python create_method_overview.py
 
