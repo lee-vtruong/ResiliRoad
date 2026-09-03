@@ -323,7 +323,7 @@ Adding graph size, density, failure count, and spectral estimate to the residual
 head reduces synthetic spatial MAE by 0.0193 [0.0120, 0.0266] and has an
 inconclusive $-0.0034$ [-0.0159, 0.0111] change for synthetic independent
 failure (negative means improvement). It increases zero-shot OSM spatial MAE by
-0.0304 [0.0063, 0.0583]; the independent increase is 0.0452
+0.0304 [0.0067, 0.0579]; the independent increase is 0.0452
 [-0.0029, 0.1019]. Simple reliability metadata therefore encourages
 distribution-specific calibration rather than robust transfer.
 
@@ -375,7 +375,13 @@ complexity proof.
 
 To test the actual screening motivation, a second sparse benchmark uses
 connected planar road-like graphs with 1,000, 2,000, 5,000, 10,000, and 20,000
-nodes and about 2.1 edges per node. At 20,000 nodes, sparse exact recomputation
+nodes and about 2.1 edges per node. Nodes occupy a normalized, near-square
+regular lattice. Horizontal and vertical nearest-neighbour edges form a
+connected truncated grid; each eligible cell independently receives its
+northwest diagonal with probability 0.12, which preserves planarity. Edge
+conductance is inverse Euclidean length. Each timed disruption removes eight
+uniformly sampled edges; base-graph connectivity is guaranteed by the grid
+backbone. At 20,000 nodes, sparse exact recomputation
 requires 1,302.4 ms per damaged graph. Intact eigensolver setup costs 1,335.3
 ms once; amortized over 1,000 screened scenarios, the prior costs 1.41 ms,
 sparse GNN inference 21.76 ms, and the combined path 23.17 ms. Thus the measured
@@ -485,8 +491,11 @@ logical AMD64 CPUs; CUDA was unavailable. Scripts record exact seeds and emit
 scenario predictions, training histories, fold assignments, runtime summaries,
 bootstrap tables, calibration diagnostics, and worst cases.
 The architecture-control runs use identical data and training settings for GCN
-and GraphSAGE. Large-scale runtime graphs are generated deterministically;
-sparse \texttt{eigsh} uses a fixed starting vector. The intact setup cost is
+and GraphSAGE. Large-scale runtime graphs use a normalized near-square lattice,
+four-neighbour grid backbone, independent northwest diagonals with probability
+0.12, and inverse-length conductance; the deterministic grid guarantees a
+connected base graph and yields mean degree approximately 4.2. Sparse
+\texttt{eigsh} uses a fixed starting vector. The intact setup cost is
 reported both separately and amortized over 1,000 scenarios, preventing
 preprocessing from being hidden in the speed comparison.
 

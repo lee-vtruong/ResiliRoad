@@ -36,10 +36,12 @@ def scores(frame):
     target = frame.target.to_numpy()
     pred = frame.prediction.to_numpy()
     rho = 0.0 if np.std(pred) < 1e-12 or np.std(target) < 1e-12 else float(spearmanr(target, pred).statistic)
+    target_ss = np.sum((target - target.mean()) ** 2)
+    r2 = np.nan if target_ss < 1e-12 else float(1 - np.sum((target - pred) ** 2) / target_ss)
     return pd.Series({
         "mae": float(np.mean(np.abs(target - pred))),
         "rmse": float(np.sqrt(np.mean((target - pred) ** 2))),
-        "r2": float(1 - np.sum((target - pred) ** 2) / np.sum((target - target.mean()) ** 2)),
+        "r2": r2,
         "spearman": rho,
     })
 
