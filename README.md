@@ -16,9 +16,9 @@ correction.
 
 The study uses five random seeds, graph-disjoint synthetic splits, independent,
 spatially clustered, and targeted-betweenness disruptions, and zero-shot
-transfer to 13 OpenStreetMap areas across six Asian countries. OSM uncertainty
-uses a hierarchical bootstrap with area as the outer cluster and seed nested
-within area.
+transfer to 13 OpenStreetMap areas across six Asian countries. For the expanded
+OSM analyses, uncertainty uses a hierarchical bootstrap with area as the outer
+cluster and seed nested within area.
 
 | OSM failure process | Direct GCN MAE | Residual GCN MAE | Paired improvement [95% CI] |
 |---|---:|---:|---:|

@@ -27,9 +27,10 @@ spatially clustered, and edge-betweenness-targeted failures, with graph-disjoint
 synthetic splits and zero-shot transfer to 13 OpenStreetMap (OSM) areas in six
 countries (48--1,259 nodes). GCN, GraphSAGE, and explicitly edge-aware MPNN
 backbones, feature ablations, and first- and truncated second-order analytical
-baselines isolate the contribution of the residual prior. OSM uncertainty uses
-an area-clustered hierarchical bootstrap with seed nested within area, rather
-than treating seeds or scenarios as geographic replicates. Across the expanded
+baselines isolate the contribution of the residual prior. For the expanded OSM
+analyses, uncertainty uses an area-clustered hierarchical bootstrap with seed
+nested within area, rather than treating seeds or scenarios as geographic
+replicates. Across the expanded
 OSM panel, residual GCN improves spatial-failure MAE by 0.0391 (95\% hierarchical
 interval 0.0151--0.0662), while residual GraphSAGE improves targeted-failure MAE
 by 0.0257 (0.0095--0.0446). Edge-MPNN residual differences are positive but
@@ -305,11 +306,11 @@ epochs. A joint three-mode version is retained as a sensitivity analysis. Each
 seed supplies eight scenarios per area and mode. Country is the outer inferential unit and
 seed is nested within country; neither areas within a held-out country nor
 scenarios are treated as independent country replications.
-The 60 joint-protocol LOCO fits required 6.49 aggregate CPU-hours. The 180
-matched-protocol fits required 0.49 aggregate optimizer-hours because each uses
-one third of the scenarios and often stops early; both figures exclude exact
-label generation. Independent seeds can be run concurrently, but reported
-model timings are not divided by parallelism.
+The same \texttt{perf\_counter} timing around optimization gave summed per-fit
+wall times of 6.49 h for 60 joint fits and 0.49 h for 180 matched fits, excluding
+label generation and evaluation. Because these were separate executions rather
+than a controlled timing benchmark, the unadjusted totals document provenance
+and are not evidence of comparative efficiency.
 
 \subsection{Statistics, calibration, and runtime}
 For synthetic graph populations, seeds 11, 22, 33, 44, and 55 define independent
