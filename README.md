@@ -40,6 +40,13 @@ does not claim that the spectral residual is universally superior. The paired
 area-outer hierarchical intervals include zero, so this reversal is a caution about stability
 and domain shift rather than a confirmed direct-GCN advantage.
 
+The matched per-regime leave-one-country-out test holds out each of six
+countries in turn. Residual GCN has lower point-estimate MAE for independent
+failures (0.145 vs 0.182) and targeted failures (0.196 vs 0.258), but higher
+MAE for spatial clusters (0.149 vs 0.061). Only targeted failure has a
+country-clustered interval excluding zero. A joint-training sensitivity run has
+the same sign pattern, ruling out multi-regime pooling as its explanation.
+
 The conclusion is not tied to vanilla GCN: direct and residual GraphSAGE and
 edge-aware MPNN models were run with the same data and optimization protocol. Residual GraphSAGE improves
 paired MAE on both synthetic modes and OSM-independent transfer; the OSM-spatial
@@ -47,7 +54,8 @@ interval includes zero. A sparse CPU benchmark reaches 20,000 nodes, where
 exact recomputation takes 1.302 s per scenario versus 23.17 ms for the
 amortized spectral-prior plus sparse-GNN path when screening 1,000 scenarios.
 The expanded study also includes a truncated second-order perturbation baseline,
-eigengap-stratified errors, and calibration of learned versus needed corrections.
+eigengap-stratified errors, calibration of learned versus needed corrections,
+and descriptive residual-gain diagnostics against graph size and density.
 
 ## Methods compared
 
@@ -81,6 +89,8 @@ python run_large_scaling_benchmark.py
 python run_geographic_transfer.py --seed 11 --scenarios-per-site-mode 40 --epochs 25 --output outputs/geographic_transfer/seed_11
 python analyze_journal_results.py
 python analyze_jcn2_results.py
+python run_country_transfer.py --seed 11 --scenarios-per-area-mode 8 --epochs 12 --training-protocol per_mode --output outputs/country_transfer_per_mode/seed_11
+python analyze_country_transfer.py --input outputs/country_transfer_per_mode --output outputs/country_transfer_per_mode_summary
 python collect_environment.py
 python create_method_overview.py
 python create_osm_triptych.py
@@ -101,6 +111,8 @@ script performs this loop and compiles the paper.
   differences, error analysis, runtime, and environment metadata.
 - [`outputs/jcn2_summary/`](outputs/jcn2_summary/) - area-clustered expanded
   results, eigengap analysis, correction diagnostics, and analytical controls.
+- [`outputs/country_transfer_per_mode_summary/`](outputs/country_transfer_per_mode_summary/) -
+  matched per-regime leave-one-country-out metrics and country diagnostics.
 - [`docs/EXPERIMENT_MATRIX.md`](docs/EXPERIMENT_MATRIX.md) - preregistered
   experiment and claim matrix.
 

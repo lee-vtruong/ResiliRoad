@@ -28,7 +28,10 @@ outputs/jcn2_pilot/
 outputs/edge_smoke*/
 outputs/edge_debug/
 journal/output/rendered/
+journal/output/rendered_final/
 outputs/geographic_transfer/
+outputs/country_transfer/
+outputs/country_transfer_per_mode/
 outputs/geographic_transfer_smoke/
 outputs/sage_smoke/
 outputs/paper_summary/all_predictions.csv

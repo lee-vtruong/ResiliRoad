@@ -35,6 +35,19 @@ foreach ($seed in 11, 22, 33, 44, 55) {
 }
 
 python analyze_jcn2_results.py
+
+foreach ($seed in 11, 22, 33, 44, 55) {
+    python run_country_transfer.py `
+        --seed $seed `
+        --scenarios-per-area-mode 8 `
+        --epochs 12 `
+        --training-protocol per_mode `
+        --output "outputs/country_transfer_per_mode/seed_$seed"
+}
+
+python analyze_country_transfer.py `
+    --input outputs/country_transfer_per_mode `
+    --output outputs/country_transfer_per_mode_summary
 python collect_environment.py
 python create_method_overview.py
 python create_osm_triptych.py

@@ -91,6 +91,36 @@ def main():
         on=["domain", "area", "seed", "graph_id", "failure_mode"], how="left")
     graph_metrics.to_csv(args.output / "eigengap_metrics.csv", index=False)
 
+    # Descriptive graph-level diagnostic: average GCN residual gain versus
+    # three pre-disruption graph properties. These correlations are not causal.
+    gcn = area.pivot_table(
+        index=["area", "country", "nodes", "edges", "seed", "failure_mode", "eigengap"],
+        columns="model", values="mae"
+    ).reset_index()
+    gcn["delta_mae"] = gcn["direct_full"] - gcn["residual_full"]
+    gcn["density"] = 2 * gcn.edges / (gcn.nodes * (gcn.nodes - 1))
+    structural = gcn.groupby(["area", "country", "nodes", "edges"], observed=True).agg(
+        delta_mae=("delta_mae", "mean"), density=("density", "first"),
+        eigengap=("eigengap", "mean")
+    ).reset_index()
+    structural.to_csv(args.output / "structural_gain_diagnostics.csv", index=False)
+    fig_s, axes_s = plt.subplots(1, 3, figsize=(11.8, 3.45))
+    variables = [("nodes", "Number of nodes", True), ("density", "Density", False),
+                 ("eigengap", "Relative eigengap", False)]
+    for axis, (column, label, log_x) in zip(axes_s, variables):
+        x = structural[column].to_numpy(); y = structural.delta_mae.to_numpy()
+        rho = spearmanr(x, y).statistic
+        axis.scatter(x, y, s=36, color="#2878b5", alpha=.85)
+        axis.axhline(0, color="black", lw=.8)
+        if log_x:
+            axis.set_xscale("log")
+        axis.set(xlabel=label, ylabel="Direct MAE - residual MAE",
+                 title=f"Spearman $\\rho$={rho:.2f}")
+    fig_s.tight_layout()
+    fig_s.savefig(args.output / "structural_gain_diagnostics.pdf", bbox_inches="tight")
+    fig_s.savefig(args.output / "structural_gain_diagnostics.png", dpi=240, bbox_inches="tight")
+    plt.close(fig_s)
+
     fig, axes = plt.subplots(1, 3, figsize=(13.2, 3.8))
     focus = summary[summary.model.isin(["spectral", "spectral_second_order", "direct_edge_mpnn", "residual_edge_mpnn"])]
     for model, marker in [("spectral", "o"), ("spectral_second_order", "s")]:

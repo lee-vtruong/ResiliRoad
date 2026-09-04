@@ -54,10 +54,10 @@ navy = "#172554"
 
 box(ax, (0.025, 0.34), 0.14, 0.36, "INPUT", "Road graph  G\nedge weights + coordinates", blue)
 box(ax, (0.205, 0.55), 0.16, 0.32, "BASE SPECTRUM", "Laplacian L\n$\\lambda_2(G)$ and Fiedler $u_2$", purple)
-box(ax, (0.205, 0.12), 0.16, 0.32, "DISRUPTION", "Failed set S\nindependent or spatial cluster", orange)
+box(ax, (0.205, 0.12), 0.16, 0.32, "DISRUPTION", "Failed set S\nindependent / spatial / targeted", orange)
 box(ax, (0.405, 0.58), 0.17, 0.28, "FAST PRIOR", "$\\hat y_{spec}$ from summed\nFiedler edge sensitivities", purple)
 box(ax, (0.405, 0.17), 0.17, 0.28, "DAMAGED GRAPH", "$G-S$ adjacency\nnode and disruption features", orange)
-box(ax, (0.625, 0.32), 0.16, 0.38, "GRAPH LEARNER", "3-layer GCN + pooling\nlearned correction $r_\\theta$\n\nAblations: Fiedler / coords", green)
+box(ax, (0.625, 0.32), 0.16, 0.38, "GNN BACKBONE", "GCN / GraphSAGE / edge-MPNN\nmean-max pooling\nlearned correction $r_\\theta$", green)
 box(ax, (0.825, 0.51), 0.15, 0.32, "PREDICTION", "$\\hat y=\\mathrm{clip}(\\hat y_{spec}$\n$+\\tanh r_\\theta,0,1)$", navy)
 box(ax, (0.825, 0.10), 0.15, 0.26, "EVALUATION", "Exact $y$ via $\\lambda_2(G-S)$\nMAE, rank, CI, runtime", blue)
 
@@ -73,7 +73,7 @@ arrow(ax, (0.90, 0.51), (0.90, 0.36), label="compare")
 
 ax.text(0.5, 0.965, "ResiliRoad: analytical sensitivity as a prior, graph learning as a correction",
         ha="center", va="top", fontsize=14.5, fontweight="bold", color="#111827")
-ax.text(0.5, 0.025, "Training uses graph-disjoint synthetic splits; evaluation includes five zero-shot OSM networks and paired seed-level uncertainty.",
+ax.text(0.5, 0.025, "Graph-disjoint synthetic training; evaluation spans 13 OSM areas in six countries with area-clustered uncertainty.",
         ha="center", va="bottom", fontsize=9, color="#475569")
 
 fig.tight_layout(pad=0.25)
