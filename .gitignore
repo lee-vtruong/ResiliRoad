@@ -45,6 +45,8 @@ report/output/pdf/*.log
 report/output/pdf/*.out
 report/output/pdf/main.pdf
 journal/output/pdf/*.aux
+journal/output/pdf/*.fdb_latexmk
+journal/output/pdf/*.fls
 journal/output/pdf/*.log
 journal/output/pdf/*.out
 journal/output/pdf/main.pdf

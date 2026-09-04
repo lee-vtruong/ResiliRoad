@@ -44,8 +44,10 @@ Controlled sparse-eigensolver scaling extends to 20,000 nodes and separates one-
 spectral setup, amortized cost, and update-only cost. These results identify the
 spectral residual as a useful but domain-sensitive inductive bias, and delimit
 its applicability to structural connectivity rather than hazard or traffic-flow
-prediction. Code and cached networks are available at
-\href{https://github.com/lee-vtruong/ResiliRoad}{github.com/lee-vtruong/ResiliRoad}.
+prediction. Code, cached networks, and reproducibility artefacts are permanently
+archived at \href{https://doi.org/10.5281/zenodo.22307723}{doi:10.5281/zenodo.22307723};
+the development repository is available on
+\href{https://github.com/lee-vtruong/ResiliRoad}{GitHub}.
 \end{abstract}
 
 \noindent\textbf{Keywords:} algebraic connectivity; Fiedler vector; graph neural
@@ -648,11 +650,12 @@ reproducible account of when a Fiedler prior helps and when it does not.
 \section*{Data and code availability}
 Code, cached OSM-derived GraphML, manifests, experiment scripts, environment
 versions, compact result tables, and release metadata are available as
-ResiliRoad version 1.0.0~\cite{resiliroad}.
+ResiliRoad version 1.0.0, permanently archived on Zenodo~\cite{resiliroad}.
 OSM data are licensed under the Open Data Commons Open Database License and are
-attributed to OpenStreetMap contributors~\cite{osm}. Release metadata are
-included so that the exact submitted version can be archived and cited
-persistently without relying on a mutable development branch.
+attributed to OpenStreetMap contributors~\cite{osm}. The immutable archived
+release fixes the code, data, configurations, and compact outputs used for the
+submitted results; ongoing development is hosted at
+\url{https://github.com/lee-vtruong/ResiliRoad}.
 
 \section*{Funding}
 This research received no external funding.
@@ -810,8 +813,8 @@ Environment and Urban Systems} 65 (2017), 126--139.
 doi:10.1016/j.compenvurbsys.2017.05.004.
 \bibitem{osm} OpenStreetMap contributors, OpenStreetMap, 2026,
 \url{https://www.openstreetmap.org/copyright}.
-\bibitem{resiliroad} V.-T. Le, ResiliRoad: spectral-prior graph learning for
-road-network disruption screening, version 1.0.0, 2026,
-\url{https://github.com/lee-vtruong/ResiliRoad}.
+\bibitem{resiliroad} V.-T. Le, ResiliRoad: residual spectral graph learning for
+road-network disruption analysis, version 1.0.0, Zenodo (2026),
+doi:10.5281/zenodo.22307723.
 \end{thebibliography}
 \end{document}

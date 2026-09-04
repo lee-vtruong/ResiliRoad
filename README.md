@@ -1,5 +1,7 @@
 # ResiliRoad
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22307723.svg)](https://doi.org/10.5281/zenodo.22307723)
+
 Reproducible code and artefacts for **When Does a Spectral Prior Help Graph
 Learning? Connectivity-Loss Estimation under Road-Network Disruptions**.
 
@@ -123,6 +125,23 @@ script performs this loop and compiles the paper.
 - [Final paper PDF](report/output/pdf/ResiliRoad_Final_Paper.pdf)
 - [Final VMS60 poster PDF](poster/output/pdf/ResiliRoad_VMS60_Poster.pdf)
 - [Method overview (SVG)](figures/method_overview.svg)
+
+## Citation
+
+The exact `v1.0.0` reproducibility release is permanently archived on Zenodo:
+[doi:10.5281/zenodo.22307723](https://doi.org/10.5281/zenodo.22307723).
+
+```bibtex
+@software{le_resiliroad_2026,
+  author    = {Le, Van-Truong},
+  title     = {ResiliRoad: residual spectral graph learning for road-network disruption analysis},
+  version   = {1.0.0},
+  year      = {2026},
+  publisher = {Zenodo},
+  doi       = {10.5281/zenodo.22307723},
+  url       = {https://doi.org/10.5281/zenodo.22307723}
+}
+```
 
 ## Author
 
