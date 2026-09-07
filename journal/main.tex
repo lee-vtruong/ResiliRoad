@@ -26,11 +26,9 @@ first-order Fiedler sensitivity. The design is tested under independent,
 spatially clustered, and edge-betweenness-targeted failures, with graph-disjoint
 synthetic splits and zero-shot transfer to 13 OpenStreetMap (OSM) areas in six
 countries (48--1,259 nodes). GCN, GraphSAGE, and explicitly edge-aware MPNN
-backbones, feature ablations, and first- and truncated second-order analytical
-baselines isolate the contribution of the residual prior. For the expanded OSM
+backbones and analytical baselines isolate the residual prior. For expanded OSM
 analyses, uncertainty uses an area-clustered hierarchical bootstrap with seed
-nested within area, rather than treating seeds or scenarios as geographic
-replicates. Across the expanded
+nested within area. Across the expanded
 OSM panel, residual GCN improves spatial-failure MAE by 0.0391 (95\% hierarchical
 interval 0.0151--0.0662), while residual GraphSAGE improves targeted-failure MAE
 by 0.0257 (0.0095--0.0446). Edge-MPNN residual differences are positive but
@@ -42,8 +40,9 @@ Matched per-regime leave-one-country-out OSM-to-OSM transfer is mixed: residual
 GCN improves targeted-failure MAE by 0.0622 (0.0169--0.1153), but worsens the
 spatial point estimate; the same sign pattern appears under joint training.
 Controlled sparse-eigensolver scaling extends to 20,000 nodes and separates one-time
-spectral setup, amortized cost, and update-only cost. These results identify the
-spectral residual as a useful but domain-sensitive inductive bias, and delimit
+spectral setup from amortized cost. Within the limited geographic
+clusters, these results characterize the spectral residual as a potentially useful
+but domain-sensitive inductive bias and delimit
 its applicability to structural connectivity rather than hazard or traffic-flow
 prediction. Code, cached networks, and reproducibility artefacts are permanently
 archived at \href{https://doi.org/10.5281/zenodo.22307723}{doi:10.5281/zenodo.22307723};
@@ -417,7 +416,7 @@ prediction generally wins after training on real roads. Across-country transfer
 is failure-regime and country dependent, and six outer clusters still limit
 precision.
 
-\begin{table}[htbp]
+\begin{table}[H]
 \centering\small
 \caption{Matched per-regime leave-one-country-out OSM transfer. One model is
 trained per failure regime. MAE values average countries and seeds; differences
@@ -433,7 +432,7 @@ Targeted betweenness&.258&.196&\textbf{.0622 [.0169,.1153]}\\ \bottomrule
 \end{tabular}}
 \end{table}
 
-\begin{figure}[htbp]
+\begin{figure}[H]
 \centering
 \includegraphics[width=.86\textwidth]{../outputs/country_transfer_per_mode_summary/loco_by_country.pdf}
 \caption{Matched per-regime direct-minus-residual GCN MAE for each held-out
@@ -474,7 +473,7 @@ outperform the node-message-passing models; for example, its residual MAE is
 Thus explicit failed-edge attributes are an architecture control, not an
 automatic accuracy gain.
 
-\begin{table}[htbp]
+\begin{table}[H]
 \centering\small
 \caption{Expanded zero-shot OSM paired improvement (direct minus residual
 MAE), area mean [95\% hierarchical interval].}
@@ -488,6 +487,8 @@ Edge-MPNN&.0042 [-.1210,.1227]&.0128 [-.1489,.1575]&.0359 [-.0412,.1113]\\ \bott
 \end{table}
 
 \subsection{Transport-proxy and graph-size controls}
+The size-only experiment is a within-family sensitivity analysis, not a
+morphology-matched synthetic-to-OSM transfer test.
 The transport-topology proxies do not approximate the spectral target closely.
 Area-mean MAE for OD-efficiency loss is .396, .582, and .244 under independent,
 spatial, and targeted failure; largest-component loss gives .403, .592, and
@@ -526,7 +527,7 @@ compared with .843, .834, and .617 under independent failure. The residual
 therefore tends to shrink the correction precisely in the targeted regime,
 rather than fully undoing a miscalibrated analytical anchor.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
 \centering
 \includegraphics[width=.96\textwidth]{../outputs/jcn2_summary/jcn2_diagnostics.pdf}
 \caption{Expanded diagnostic results. (a) First- and second-order spectral
@@ -546,7 +547,7 @@ selected areas these are not inferential or causal estimates, but they show no
 simple collapse of the residual gain as graph size increases and no single
 structural variable explains it.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
 \centering
 \includegraphics[width=.94\textwidth]{../outputs/jcn2_summary/structural_gain_diagnostics.pdf}
 \caption{Descriptive residual-GCN gain versus OSM graph size, density, and
@@ -559,35 +560,27 @@ monotone relationship, especially for eigengap.}
 \end{figure}
 
 \subsection{Runtime and error regimes}
-On the five small OSM networks, exact dense eigendecomposition averages
-5.094 ms per scenario, first-order update 0.018 ms, and residual inference
-0.674 ms on CPU. Controlled sparse scaling gives exact times 8.37, 13.41,
-14.62, 37.03, and 92.61 ms for 50, 100, 200, 400, and 800 nodes. Update-only
-time remains 0.088--0.113 ms; amortized spectral cost is 0.94, 0.89, 1.68,
-3.51, and 8.79 ms, while residual-GCN inference is 0.67, 0.70, 0.96, 2.03,
-and 5.92 ms. The slight non-monotonicity at small size reflects fixed solver
-overhead and graph-to-graph variability; this benchmark is descriptive, not a
-complexity proof.
+On the five small OSM networks, dense exact recomputation, first-order update,
+and residual inference average 5.094, 0.018, and 0.674 ms per scenario on CPU.
+In the 50--800-node sparse control, exact time rises from 8.37 to 92.61 ms,
+whereas residual-GCN inference rises from 0.67 to 5.92 ms; intermediate values
+are archived with the code.
 
 To test the actual screening motivation, a second sparse benchmark uses
 connected planar road-like graphs with 1,000, 2,000, 5,000, 10,000, and 20,000
-nodes, with edge-to-node ratio $|E|/|V|\approx2.1$, corresponding to mean
-degree $\bar d\approx4.2$. Nodes occupy a normalized, near-square
-regular lattice. Horizontal and vertical nearest-neighbour edges form a
-connected truncated grid; each eligible cell independently receives its
-northwest diagonal with probability 0.12, which preserves planarity. Edge
-conductance is inverse Euclidean length. Each timed disruption removes eight
-uniformly sampled edges; base-graph connectivity is guaranteed by the grid
-backbone. At 20,000 nodes, sparse exact recomputation
+nodes, with $|E|/|V|\approx2.1$ (mean degree $\bar d\approx4.2$). The connected
+near-square grid receives planar diagonals with probability 0.12 and
+inverse-length conductance; each disruption removes eight random edges. At
+20,000 nodes, sparse exact recomputation
 requires 1,302.4 ms per damaged graph. Intact eigensolver setup costs 1,335.3
 ms once; amortized over 1,000 screened scenarios, the prior costs 1.41 ms,
 sparse GNN inference 21.76 ms, and the combined path 23.17 ms. Thus the measured
 screening path is 56 times faster at the largest size, conditional on reusing
-one intact graph. Only three scenarios on each of two generated graphs are
-timed per size, and the large graphs are not used for accuracy training; these
-measurements support computational scaling, not predictive generalization.
+one intact graph. Only three scenarios on each of two graphs are timed per size,
+and none is used for accuracy training; this is a scaling check, not evidence
+of predictive generalization.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
 \centering
 \includegraphics[width=.92\textwidth]{../outputs/journal_summary/large_scale_runtime.pdf}
 \caption{Sparse CPU scaling from 1,000 to 20,000 nodes. Exact recomputation is
@@ -609,11 +602,14 @@ leave-one-area-out errors are retained in a machine-readable table instead of
 being removed as outliers.
 
 \section{Discussion}
+Across the 12 primary paired OSM comparisons (nine expanded zero-shot and three
+matched LOCO), four have inferential support because their area- or
+country-clustered 95\% intervals exclude zero; the other eight are treated only
+as descriptive trends. This convention governs the interpretation below.
+
 The central result is a condition, not a new-architecture claim. A spectral
 residual improves point estimates for GCN, GraphSAGE, and edge-MPNN on the
-expanded zero-shot OSM test, but inferential support is limited to three of nine
-area-level intervals. The remaining signs are descriptive trends, not established
-population effects. It combines the prior's ranking
+expanded zero-shot OSM test. It combines the prior's ranking
 signal with learned nonlinear calibration. However, blocked OSM transfer and
 reliability-context ablation show that the same inductive bias can amplify
 domain-specific error. The prior can then behave as a shortcut or biased anchor:
@@ -622,9 +618,7 @@ calibration has shifted. Yet matched LOCO results are mixed rather than a
 consistent direct-model victory: the residual helps two failure regimes and
 hurts one, with country-level support only for targeted failures. The same
 sign pattern under joint training rules out training-regime pooling as its
-cause. Because LOCO has only six country clusters, its targeted result is the
-only cross-country contrast with inferential support; independent and spatial
-signs remain descriptive. Consequently, the evidence establishes domain- and
+cause. Consequently, the evidence documents domain- and
 regime-sensitive behaviour in this sample, not a general causal effect of
 training domain or an architectural guarantee.
 
@@ -670,14 +664,11 @@ replication rather than inflate sample size with correlated scenarios.
 \section{Conclusion}
 Residual spectral graph learning offers an interpretable, fast estimator of
 finite multi-edge connectivity loss whose observed advantage varies with
-training domain and failure regime. The method improves point estimates across GCN, GraphSAGE, and
-edge-MPNN in the expanded zero-shot study, with area-level support in three of
-nine conditions. OSM-to-OSM results vary by protocol and failure regime: the
+training domain and failure regime. The method shows heterogeneous point-estimate gains across
+GCN, GraphSAGE, and edge-MPNN in the expanded zero-shot study. OSM-to-OSM
+results vary by protocol and failure regime: the
 five-area reversal does not persist uniformly in matched six-country LOCO
 transfer, and joint training yields the same sign pattern.
-Only three of nine expanded zero-shot contrasts and one of three matched LOCO
-contrasts have clustered intervals excluding zero; all other signs remain
-descriptive.
 Reporting both outcomes, along with ablations, hierarchical
 uncertainty, targeted attacks, eigengap and second-order controls, correction
 calibration, error cases, and separated runtime costs, provides a
@@ -736,7 +727,7 @@ counts against the original predictions before computing largest-component and
 graphs per size, six scenarios per regime and seed, and five seeds. Machine-readable
 scenario predictions and summaries accompany the plotting script.
 
-\begin{table}[htbp]
+\begin{table}[H]
 \centering\small
 \caption{Architecture control: MAE, seed mean [95\% seed-bootstrap interval].}
 \label{tab:backbone}
@@ -749,7 +740,7 @@ OSM&Spatial&.102 [.077,.148]&.090 [.071,.124]&.113 [.082,.164]&\textbf{.089 [.07
 \end{tabular}}
 \end{table}
 
-\begin{figure}[htbp]
+\begin{figure}[H]
 \centering
 \includegraphics[width=.96\textwidth]{../outputs/revision_controls/revision_controls.pdf}
 \caption{Reviewer-motivated controls. (a) Topology-only transport-proxy error
@@ -762,7 +753,7 @@ size for independent and targeted failures but remaining high and non-monotone
 for spatial failures.}
 \end{figure}
 
-\begin{table}[htbp]
+\begin{table}[H]
 \centering\small
 \caption{Fairness controls for the expanded architecture comparison. Parameter
 counts are identical for direct and residual variants of each backbone.}

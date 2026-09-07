@@ -1,0 +1,117 @@
+\documentclass[10pt]{article}
+\usepackage[a4paper,margin=23mm]{geometry}
+\usepackage[hidelinks]{hyperref}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+\setlength{\emergencystretch}{2em}
+\newcommand{\review}[1]{\textbf{Reviewer comment.} \emph{#1}}
+\newcommand{\response}{\textbf{Response.} }
+
+\begin{document}
+\begin{center}
+{\Large\bfseries Response to Review}\\[5pt]
+{\bfseries When does a spectral prior help graph learning?\\
+Connectivity-loss estimation under road-network disruptions}\\[5pt]
+Van-Truong Le
+\end{center}
+
+We thank the reviewer for the careful and constructive assessment. We revised
+the manuscript to sharpen its network-science contribution, distinguish
+descriptive trends from inferentially supported comparisons, add transport
+robustness and size controls, and improve presentation. Locations below refer
+to the revised manuscript; source-line references are included to make the
+changes easy to audit before journal line numbering is applied.
+
+\section*{Major comments}
+
+\review{M1 --- The contribution relative to residual-learning literature is
+not sufficiently explicit.}
+
+\response We agree. Section 2.3 now directly states that bounded residual
+learning itself is not claimed as novel and contrasts ResiliRoad with generic
+hybrid/physics-guided residual modelling. It identifies the network-science
+contribution as the controlled separation of (i) an explicit Fiedler
+perturbation prior, (ii) a Fiedler node feature, and (iii) a learned bounded
+finite-perturbation correction, followed by geographic transfer and correction
+calibration tests. We also added the closely related learnable-physics-engine
+literature and explain why the correction-to-prior calibration question is
+specific to spectral network disruption. See Section 2.3, p.~4
+(source lines 134--159), and the bounded formulation in Section 3.
+
+\review{M2 --- Six country clusters provide limited inferential strength for
+leave-one-country-out analysis.}
+
+\response We now separate inference from description explicitly. The opening
+paragraph of the Discussion reports that four of the 12 primary expanded-OSM
+paired comparisons have clustered 95\% intervals excluding zero and treats the
+remaining eight only as descriptive trends. The manuscript therefore does not
+claim population-level geographic generality from six countries. The
+Limitations section retains the small-cluster warning and states that larger
+pre-registered geographic samples are required. See Discussion and
+Limitations, p.~16 (source lines 604--643). The statistical unit and nested
+bootstrap are defined in Section 4.3 (source lines 333--354).
+
+\review{M3 --- The experiments omit established transportation-robustness
+comparators.}
+
+\response We added two non-spectral transport-topology controls: largest
+connected-component retention and origin--destination global-efficiency
+retention. Section 5.7 reports their association with the algebraic-
+connectivity-loss target and explains their intended role. They are useful
+controls for whether standard connectivity/reachability summaries explain the
+target, but are not presented as capacity- or demand-aware transport models.
+This avoids claiming that algebraic connectivity is a universally superior
+transport-service metric. See Section 5.7, p.~13 (source lines 489--509), with
+the full diagnostic in Appendix Figure 7.
+
+\review{M4 --- Synthetic-to-real transfer confounds graph size and street
+morphology.}
+
+\response We added a size-only control spanning 50--1,200 nodes within the same
+synthetic graph family. Section 5.7 now begins by stating that this is a
+within-family sensitivity analysis, not a morphology-matched transfer test.
+The result tests whether size alone reproduces the observed reversal, while the
+remaining inability to isolate morphology is retained as a limitation. See
+Section 5.7, p.~13 (source lines 489--509), and Limitations, p.~16.
+
+\section*{Requested final checks and presentation revisions}
+
+\review{Check the Journal of Complex Networks length and figure/table rules and
+reduce the runtime material if necessary.}
+
+\response We rechecked the current Instructions to Authors. They impose a
+300-word abstract maximum and allow up to six keywords, but state no word-count
+or figure/table maximum for a Research Article. The revised manuscript has a
+sub-300-word abstract, six keywords, approximately 5,000 words by TeXcount, and
+seven figures and seven tables including the appendix. Nevertheless, we
+condensed Section 5.9 and retained only the runtime evidence needed to support
+the screening/scaling claim.
+
+\review{Consolidate repeated statistical hedging.}
+
+\response Done. A single quantitative interpretive rule now opens the
+Discussion (p.~16): four of 12 primary expanded-OSM comparisons have clustered
+intervals excluding zero; the remaining eight are descriptive. Repetitive
+qualifiers were removed from the subsequent Discussion and Conclusion while
+the methods and result tables continue to report uncertainty transparently.
+
+\review{Check float numbering and cross-references.}
+
+\response Done. Every figure and table is anchored at its first intended
+textual location, and all references use LaTeX \verb|\label|/\verb|\ref| pairs.
+The final build has no undefined references, duplicate labels, LaTeX errors, or
+overfull boxes. We also moved the architecture-fairness tables to the appendix,
+defined ``biased anchor'' at first use (Introduction, source lines 81--84), and
+increased axis-label sizes in the multi-panel diagnostics.
+
+\section*{Closing}
+
+No additional experiment is claimed to fully separate road morphology from
+other aspects of domain shift. We have instead bounded that conclusion and
+made the evidence hierarchy explicit. We believe the revised manuscript now
+states its novelty, empirical support, and limitations more precisely while
+remaining focused on its central network-science question.
+
+\end{document}
