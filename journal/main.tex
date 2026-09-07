@@ -21,27 +21,27 @@
 \begin{abstract}
 Rapid evaluation of many simultaneous road-link disruptions requires a useful
 compromise between exact spectral recomputation and local approximation. We
-estimate the relative loss of algebraic connectivity after multi-edge deletion
+estimated the relative loss of algebraic connectivity after multi-edge deletion
 using graph neural networks (GNNs) that learn a bounded correction to a
-first-order Fiedler sensitivity. The design is tested under independent,
+first-order Fiedler sensitivity. The design was tested under independent,
 spatially clustered, and edge-betweenness-targeted failures, with graph-disjoint
 synthetic splits and zero-shot transfer to 13 OpenStreetMap (OSM) areas in six
 countries (48--1,259 nodes). GCN, GraphSAGE, and explicitly edge-aware MPNN
-backbones and analytical baselines isolate the residual prior. For expanded OSM
-analyses, uncertainty uses an area-clustered hierarchical bootstrap with seed
+backbones and analytical baselines isolated the residual prior. For expanded OSM
+analyses, uncertainty used an area-clustered hierarchical bootstrap, with seeds
 nested within area. Across the expanded
-OSM panel, residual GCN improves spatial-failure MAE by 0.0391 (95\% hierarchical
-interval 0.0151--0.0662), while residual GraphSAGE improves targeted-failure MAE
-by 0.0257 (0.0095--0.0446). Edge-MPNN residual differences are positive but
-imprecise. Second-order perturbation improves first-order MAE by only
-0.0028--0.0053. Correction slopes fall from 0.84--0.95 under independent or
+OSM panel, residual GCN improved spatial-failure MAE by 0.0391 (95\% hierarchical
+interval 0.0151--0.0662), while residual GraphSAGE improved targeted-failure MAE
+by 0.0257 (0.0095--0.0446). Edge-MPNN residual differences were positive but
+imprecise. Second-order perturbation improved first-order MAE by only
+0.0028--0.0053. Correction slopes fell from 0.84--0.95 under independent or
 spatial transfer to 0.51--0.58 under targeted transfer for GCN/GraphSAGE,
 directly quantifying residual shrinkage around systematic prior error.
-Matched per-regime leave-one-country-out OSM-to-OSM transfer is mixed: residual
-GCN improves targeted-failure MAE by 0.0622 (0.0169--0.1153), but worsens the
+The matched per-regime leave-one-country-out OSM-to-OSM transfer was mixed: residual
+GCN improved targeted-failure MAE by 0.0622 (0.0169--0.1153), but worsened the
 spatial point estimate; the same sign pattern appears under joint training.
-Controlled sparse-eigensolver scaling extends to 20,000 nodes and separates one-time
-spectral setup from amortized cost. Within the limited geographic
+Controlled sparse eigensolver scaling extended to 20,000 nodes and separated the one-time
+spectral setup from the amortized cost. Within the limited geographic
 clusters, these results characterize the spectral residual as a potentially useful
 but domain-sensitive inductive bias and delimit
 its applicability to structural connectivity rather than hazard or traffic-flow
@@ -58,10 +58,10 @@ network; spatial network; infrastructure robustness; domain shift.
 Road networks are spatially embedded complex networks whose link losses can
 fragment access routes and alter system-wide connectivity. Exhaustive exact
 evaluation becomes costly when a planner must screen many multi-link scenarios.
-Conversely, a first-order perturbation is fast and interpretable, but its local
+Conversely, a first-order perturbation is fast and interpretable; however, its local
 linearity can fail under finite deletions, eigenvalue crossings, and
-disconnection. This tension motivates a hybrid estimator: retain the known
-spectral direction and learn only its nonlinear error.
+disconnection. This tension motivates a hybrid estimator that retains the known
+spectral direction and learns only its nonlinear error.
 
 Algebraic connectivity, the second-smallest Laplacian eigenvalue, is a global
 structural quantity~\cite{fiedler1973,mohar1991}. It does not measure travel
@@ -83,7 +83,7 @@ Rather than asking whether one new GNN architecture wins, the central thesis is
 \emph{when a mathematically informed spectral prior helps graph learning under
 distribution shift, and when it becomes a biased anchor}, meaning a systematically
 miscalibrated analytical starting value that the learned correction fails to undo. The contributions
-are: (i) a bounded residual spectral construction for simultaneous edge
+are as follows: (i) a bounded residual spectral construction for simultaneous edge
 deletions; (ii) controlled feature, GCN/GraphSAGE/edge-MPNN, second-order, and reliability-context
 ablations; (iii) three disruption processes on 13 cached OSM networks in six countries; (iv) both
 synthetic-to-real zero-shot and geographically disjoint OSM transfer; (v)
@@ -96,22 +96,22 @@ available.
 \section{Related work}
 \subsection{Spectral robustness of complex networks}
 Fiedler introduced algebraic connectivity as a graph invariant
-~\cite{fiedler1973}; later work related Laplacian spectra to expansion,
+~\cite{fiedler1973}; later studies related Laplacian spectra to expansion,
 connectivity, synchronization, and robustness
 ~\cite{mohar1991,chung1997,jamakovic2008}. Capacity-weighted spectral analysis
 has also been used to diagnose transport-network vulnerability~\cite{bell2017}.
-For a simple eigenvalue, the squared difference of Fiedler coordinates across an
-edge gives the derivative with respect to its weight~\cite{kato1995}. Such derivatives explain
+For a simple eigenvalue, the squared difference of the Fiedler coordinates across an
+edge provides the derivative with respect to its weight~\cite{kato1995}. Such derivatives explain
 infinitesimal sensitivity, whereas the present task includes several finite edge
 deletions. The residual model specifically targets the missing interaction and
 higher-order terms rather than replacing spectral analysis.
 
 \subsection{Road-network disruption}
-Road robustness depends on graph representation and disruption process.
-Multi-granularity analyses of empirical city networks show that structural
+Road robustness depends on the graph representation and disruption process.
+Multi-granularity analyses of empirical city networks have shown that structural
 conclusions can change with representation~\cite{duan2014}. Link-based indices
 using flow or capacity address functional effects~\cite{scott2006,sullivan2010},
-while critical-scenario optimization searches for damaging link combinations
+whereas critical-scenario optimization searches for damaging link combinations
 ~\cite{bagloee2017}. Hazard-independent studies compare random, localized, and
 targeted multi-link failures~\cite{sohouenou2021}; temporal analysis of Zurich
 also demonstrates process-dependent robustness~\cite{casali2020}. Random road
@@ -119,24 +119,24 @@ graph models enable controlled topology experiments~\cite{sohouenou2020}.
 Our spatial-cluster mechanism belongs to this stress-testing tradition but is a
 geometric proxy, not an empirical hazard model.
 
-Recent evidence makes scale and task definition especially important. Jana et
-al.~\cite{jana2023} use an edge-based GNN to rank critical road segments after
+Recent evidence has made scale and task definition especially important. Jana et
+al.~\cite{jana2023} used an edge-based GNN to rank critical road segments after
 disruption, directly motivating learning-based rapid screening; their output is
 an edge ranking, whereas ours is a graph-level spectral-loss estimate. Boeing
-and Ha~\cite{boeingha2024} simulate 2.4 billion trips across more than 8,000
+and Ha~\cite{boeingha2024} simulated 2.4 billion trips across more than 8,000
 urban areas in 178 countries, establishing an empirical scale far beyond our
-13 neighbourhood networks. Zang et al.~\cite{zang2024} predict dynamic traffic
-resilience under rainfall with a multi-granularity GNN; their functional,
+13 neighbourhood networks. Zang et al.~\cite{zang2024} predicted dynamic traffic
+resilience under rainfall using a multi-granularity GNN; their functional,
 temporal target is complementary to our static structural target. Reviews
 distinguish connectivity, robustness, vulnerability, and recovery-based
-resilience and warn against treating them as synonyms
+resilience and warn against treating them as synonymous
 ~\cite{rivera2022,mattsson2015,zeleke2026}.
 
 \subsection{Graph learning and analytical priors}
 GCNs aggregate local neighbourhood information and are permutation equivariant
-at node level~\cite{kipf2017}. GraphSAGE supplies an inductive aggregation
+at the node level~\cite{kipf2017}. GraphSAGE supplies an inductive aggregation
 backbone~\cite{hamilton2017}; GIN studies the expressive limits of neighbourhood
-aggregation~\cite{xu2019}, while attention and message-passing frameworks expose
+aggregation~\cite{xu2019}, whereas attention and message-passing frameworks expose
 alternative node/edge interactions~\cite{velickovic2018,gilmer2017}. Deep Sets provides an invariant alternative that
 does not propagate along edges~\cite{zaheer2017}. Graph Networks have also been
 used as learnable physical simulators~\cite{sanchezgonzalez2018}, illustrating
@@ -146,13 +146,13 @@ models commonly learn discrepancies around an analytical component~\cite{yuwang2
 learnable physics engine in~\cite{sanchezgonzalez2018} learns interaction
 dynamics for simulation and control. The network-science contribution is more
 specific. We retain the closed-form Fiedler edge derivative as an auditable
-graph-level anchor, separate that anchor experimentally from merely supplying
+graph-level anchor, separate it experimentally from merely supplying
 $u_2$ as a node feature, and test its finite multi-edge error against eigengap,
 disconnection, failure geometry, and geographic shift. Correction calibration
 then makes failure to override the anchor measurable rather than treating the
 hybrid as an opaque accuracy device. Edge-aware modelling is especially
-relevant because disruption acts on links: Jana et al.~\cite{jana2023} encode a
-road line graph for edge ranking, and Almeida et al.~\cite{almeida2025} report
+relevant because disruption acts on links. Jana et al.~\cite{jana2023} encoded a
+road line graph for edge ranking, and Almeida et al.~\cite{almeida2025} reported
 edge-aware attention for backbone-network load prediction. The present study
 instead asks whether a simple node-message-passing estimator benefits from an
 explicit spectral prior across domains. Recent JCN work on urban edge removal
@@ -168,8 +168,8 @@ target is
 y(G,S)=\operatorname{clip}\!\left(1-\frac{\lambda_2(G-S)}{\lambda_2(G)},0,1\right).
 \label{eq:target}
 \end{equation}
-Thus a disconnected damaged graph has $y=1$. If $u_2$ is a unit Fiedler vector
-and $\lambda_2$ is simple, edge sensitivity is
+Thus, a disconnected damaged graph has $y=1$. If $u_2$ is a unit Fiedler vector
+and $\lambda_2$ is simple, the edge sensitivity is
 \begin{equation}
 \frac{\partial\lambda_2}{\partial w_{ij}}=(u_{2,i}-u_{2,j})^2.
 \end{equation}
@@ -192,7 +192,7 @@ and a two-layer head. The direct model predicts $y$; the residual model predicts
 The bounded correction concentrates capacity on finite-deletion error but can
 also inherit domain-specific bias from the prior.
 
-To answer whether learning is needed beyond a higher-order analytical model, a
+To determine whether learning is needed beyond a higher-order analytical model, a
 truncated perturbation baseline retains the 12 lowest Laplacian modes:
 \begin{equation}
 \Delta\lambda_2^{(2)}=u_2^\top\Delta L u_2+
@@ -201,7 +201,7 @@ truncated perturbation baseline retains the 12 lowest Laplacian modes:
 For deletion of edges $S$, $\Delta L=-\sum_{(i,j)\in S}w_{ij}
 (e_i-e_j)(e_i-e_j)^\top$. The second-order connectivity estimate is
 $\lambda_2+\Delta\lambda_2^{(2)}$ and is converted to relative loss using
-Eq.~\eqref{eq:target}, with the same $[0,1]$ clipping as first order. Twelve
+Eq.~\eqref{eq:target}, with the same $[0,1]$ clipping as the first-order estimate. Twelve
 modes are fixed for every graph before evaluation and were not tuned on test
 performance. The $k=1$ term vanishes because $\Delta L\mathbf{1}=0$;
 numerically, the retained modes exclude $k=2$ from the correction sum.
@@ -244,16 +244,16 @@ adjacency and node incidence.
 
 \section{Experimental design}
 \subsection{Synthetic graphs and disruption processes}
-Connected random geometric graphs contain 35--65 nodes and inverse-length edge
-conductance. The original two-mode experiment generates 800 scenarios per mode
-and seed; the expanded three-mode experiment generates 400 per mode and seed.
-Entire base-graph families are assigned to train, validation, or test. Each
-scenario removes one to eight edges. Independent failure samples edges uniformly.
-Spatial-cluster failure chooses a random epicentre and removes the required
-number of edges with nearest geometric midpoints. Both modes share the same
+Connected random geometric graphs contained 35--65 nodes and used inverse-length edge
+conductance. The original two-mode experiment generated 800 scenarios per mode
+and seed; the expanded three-mode experiment generated 400 per mode and seed.
+All base-graph families were assigned to training, validation, or testing. Each
+scenario removed one to eight edges. Independent failures sampled edges uniformly.
+For spatial-cluster failures, a random epicentre was chosen and the required
+number of edges with the nearest geometric midpoints was removed. Both modes used the same
 failure-count distribution.
-The third regime samples without replacement with probability proportional to
-unweighted edge-betweenness centrality. It targets globally important links
+The targeted regime sampled without replacement with probability proportional to
+unweighted edge-betweenness centrality. This procedure targeted globally important links
 without using the Fiedler sensitivity that defines the analytical prior.
 
 \subsection{OpenStreetMap networks}
@@ -283,9 +283,6 @@ Taipei&Taiwan&1,300&965&1,546&.00332\\ Kyoto&Japan&1,500&909&1,468&.00356\\
 Tokyo&Japan&1,200&1,108&1,675&.00273\\ \bottomrule
 \end{tabular}}
 \end{table}
-
-Figure~\ref{fig:loco} shows the corresponding country-level
-direct-minus-residual differences across failure regimes.
 
 \begin{figure}[H]
 \centering
@@ -445,6 +442,9 @@ Targeted betweenness&.258&.196&\textbf{.0622 [.0169,.1153]}\\ \bottomrule
 \end{tabular}}
 \end{table}
 
+Figure~\ref{fig:loco} shows the corresponding country-level
+direct-minus-residual differences across failure regimes.
+
 \begin{figure}[H]
 \centering
 \includegraphics[width=.86\textwidth]{../outputs/country_transfer_per_mode_summary/loco_by_country.pdf}
@@ -505,7 +505,7 @@ morphology-matched synthetic-to-OSM transfer test.
 The transport-topology proxies do not approximate the spectral target closely.
 Area-mean MAE for OD-efficiency loss is .396, .582, and .244 under independent,
 spatial, and targeted failure; largest-component loss gives .403, .592, and
-.256. Area-clustered intervals appear in Appendix Fig.~\ref{fig:revisioncontrols}.
+.256. Area-clustered intervals are shown in Appendix Fig.~\ref{fig:revisioncontrols}.
 These controls show that the learned gains are not obtained by relabelling a
 component-size or shortest-path summary. They do not show that algebraic
 connectivity is a better measure of traffic service, because no demand,
@@ -664,7 +664,7 @@ Thirteen purposively selected neighbourhoods in six Asian countries improve
 geographic and morphological coverage but do not establish global or
 city-scale predictive generality; they span only 48--1,259 nodes. Their size,
 density, country, and morphology remain partly confounded. The
-synthetic geometric generator and large-scaling graphs are controlled proxies,
+synthetic geometric generator and large-scale graphs are controlled proxies,
 not metropolitan OSM accuracy datasets. Spatial clusters are not calibrated to flood,
 landslide, earthquake, construction, or conflict data. Algebraic connectivity
 is structural: it omits direction, demand, congestion, capacity, travel time,
@@ -680,9 +680,9 @@ implementations and spectral sparsification~\cite{spielman2011} may change
 runtime rankings at still larger scale.
 
 Future work should pre-register larger metropolitan regions, use nested blocked
-validation across countries, and factor graph size from density. Hazard rasters
+validation across countries, and disentangle graph size from density. Hazard rasters
 could define correlated failures, while traffic assignment could test whether
-structural loss predicts service degradation. Mixture-of-experts or learned
+structural loss predicts service degradation. A mixture-of-experts model or learned
 gating may decide when to trust the prior; conformal methods could add
 graph-population prediction regions. These extensions should preserve area-level
 replication rather than inflate sample size with correlated scenarios.
@@ -704,7 +704,7 @@ reproducible account of when a Fiedler prior helps and when it does not.
 Code, cached OSM-derived GraphML, manifests, experiment scripts, environment
 versions, compact result tables, and release metadata are available as
 ResiliRoad version 1.0.0, permanently archived on Zenodo~\cite{resiliroad}.
-OSM data are licensed under the Open Data Commons Open Database License and are
+The OSM data are licensed under the Open Data Commons Open Database License and are
 attributed to OpenStreetMap contributors~\cite{osm}. The immutable archived
 release fixes the code, data, configurations, and compact outputs used for the
 submitted results; ongoing development is hosted at
@@ -783,8 +783,8 @@ size for independent and targeted failures but remaining high and non-monotone
 for spatial failures.}
 \end{figure}
 
-Table~\ref{tab:modelbudget} summarizes parameter counts and common training
-settings across backbones.
+Table~\ref{tab:modelbudget} summarizes the parameter counts and common training
+settings across the backbones.
 
 \begin{table}[H]
 \centering\small
