@@ -21,6 +21,9 @@ def main():
     parser.add_argument("--input", type=Path, default=Path("outputs/jcn2"))
     parser.add_argument("--output", type=Path, default=Path("outputs/jcn2_summary"))
     args = parser.parse_args(); args.output.mkdir(parents=True, exist_ok=True)
+    plt.rcParams.update({"font.size": 11, "axes.titlesize": 12,
+                         "axes.labelsize": 11, "xtick.labelsize": 10,
+                         "ytick.labelsize": 10, "legend.fontsize": 9})
     frames = []
     for directory in sorted(args.input.glob("seed_*")):
         path = directory / "predictions.csv"
@@ -127,7 +130,7 @@ def main():
         part = graph_metrics[(graph_metrics.domain == "osm") & (graph_metrics.model == model)]
         values = part.groupby("eigengap_bin", observed=True).mae.mean().reindex(["low", "medium", "high"])
         axes[0].plot(values.index, values.values, marker=marker, label=model.replace("_", " "))
-    axes[0].set(title="Spectral error by relative eigengap", ylabel="MAE"); axes[0].legend(fontsize=8)
+    axes[0].set(title="Spectral error by relative eigengap", ylabel="MAE"); axes[0].legend()
     p = paired[paired.failure_mode == "targeted"]
     axes[1].bar(p.backbone, p.direct_minus_residual, color="#2878b5")
     axes[1].errorbar(p.backbone, p.direct_minus_residual,

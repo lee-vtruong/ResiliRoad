@@ -57,7 +57,9 @@ exact recomputation takes 1.302 s per scenario versus 23.17 ms for the
 amortized spectral-prior plus sparse-GNN path when screening 1,000 scenarios.
 The expanded study also includes a truncated second-order perturbation baseline,
 eigengap-stratified errors, calibration of learned versus needed corrections,
-and descriptive residual-gain diagnostics against graph size and density.
+descriptive residual-gain diagnostics against graph size and density,
+topology-only transport proxies, and a size-only spectral control from 50 to
+1,200 nodes within one planar road-like graph family.
 
 ## Methods compared
 
@@ -93,6 +95,7 @@ python analyze_journal_results.py
 python analyze_jcn2_results.py
 python run_country_transfer.py --seed 11 --scenarios-per-area-mode 8 --epochs 12 --training-protocol per_mode --output outputs/country_transfer_per_mode/seed_11
 python analyze_country_transfer.py --input outputs/country_transfer_per_mode --output outputs/country_transfer_per_mode_summary
+python run_revision_controls.py
 python collect_environment.py
 python create_method_overview.py
 python create_osm_triptych.py
@@ -115,6 +118,8 @@ script performs this loop and compiles the paper.
   results, eigengap analysis, correction diagnostics, and analytical controls.
 - [`outputs/country_transfer_per_mode_summary/`](outputs/country_transfer_per_mode_summary/) -
   matched per-regime leave-one-country-out metrics and country diagnostics.
+- [`outputs/revision_controls/`](outputs/revision_controls/) - transport-proxy
+  and graph-size control summaries and figure.
 - [`docs/EXPERIMENT_MATRIX.md`](docs/EXPERIMENT_MATRIX.md) - preregistered
   experiment and claim matrix.
 

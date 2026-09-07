@@ -37,7 +37,7 @@ by 0.0257 (0.0095--0.0446). Edge-MPNN residual differences are positive but
 imprecise. Second-order perturbation improves first-order MAE by only
 0.0028--0.0053. Correction slopes fall from 0.84--0.95 under independent or
 spatial transfer to 0.51--0.58 under targeted transfer for GCN/GraphSAGE,
-directly quantifying residual shrinkage around a biased anchor.
+directly quantifying residual shrinkage around systematic prior error.
 Matched per-regime leave-one-country-out OSM-to-OSM transfer is mixed: residual
 GCN improves targeted-failure MAE by 0.0622 (0.0169--0.1153), but worsens the
 spatial point estimate; the same sign pattern appears under joint training.
@@ -81,7 +81,8 @@ estimator fail and how does its runtime scale?
 
 Rather than asking whether one new GNN architecture wins, the central thesis is
 \emph{when a mathematically informed spectral prior helps graph learning under
-distribution shift, and when it becomes a biased anchor}. The contributions
+distribution shift, and when it becomes a biased anchor}, meaning a systematically
+miscalibrated analytical starting value that the learned correction fails to undo. The contributions
 are: (i) a bounded residual spectral construction for simultaneous edge
 deletions; (ii) controlled feature, GCN/GraphSAGE/edge-MPNN, second-order, and reliability-context
 ablations; (iii) three disruption processes on 13 cached OSM networks in six countries; (iv) both
@@ -140,10 +141,16 @@ alternative node/edge interactions~\cite{velickovic2018,gilmer2017}. Deep Sets p
 does not propagate along edges~\cite{zaheer2017}. Graph Networks have also been
 used as learnable physical simulators~\cite{sanchezgonzalez2018}, illustrating
 how known structure and learned corrections can coexist. The novelty claimed
-here is not the first use of GNNs, residual learning, or spectral metrics. It is
-the controlled empirical separation of an explicit spectral prior from a
-spectral node feature, followed by geographic transfer and negative-ablation
-analysis on spatial infrastructure networks. Edge-aware modelling is especially
+here is not bounded residual learning itself: hybrid and physics-guided
+models commonly learn discrepancies around an analytical component~\cite{yuwang2024}, and the
+learnable physics engine in~\cite{sanchezgonzalez2018} learns interaction
+dynamics for simulation and control. The network-science contribution is more
+specific. We retain the closed-form Fiedler edge derivative as an auditable
+graph-level anchor, separate that anchor experimentally from merely supplying
+$u_2$ as a node feature, and test its finite multi-edge error against eigengap,
+disconnection, failure geometry, and geographic shift. Correction calibration
+then makes failure to override the anchor measurable rather than treating the
+hybrid as an opaque accuracy device. Edge-aware modelling is especially
 relevant because disruption acts on links: Jana et al.~\cite{jana2023} encode a
 road line graph for edge ranking, and Almeida et al.~\cite{almeida2025} report
 edge-aware attention for backbone-network load prediction. The present study
@@ -312,12 +319,28 @@ label generation and evaluation. Because these were separate executions rather
 than a controlled timing benchmark, the unadjusted totals document provenance
 and are not evidence of comparative efficiency.
 
+Two reviewer-motivated controls delimit competing explanations. First, we
+replay every expanded OSM disruption and compute two topology-only transport
+proxies: relative loss of the largest connected component and relative loss of
+mean inverse shortest-path length over 64 fixed origin--destination pairs per
+area. The latter uses inverse conductance as link length. These are not substitutes
+for demand- and capacity-based robustness indices~\cite{scott2006,sullivan2010};
+they test whether common connectivity and accessibility summaries approximate
+the stated $\lambda_2$-loss target. Second, a size-only control uses the same
+connected planar lattice family, edge-weight rule, 1--8-edge failure policy,
+and three failure regimes at 50, 100, 200, 400, 800, and 1,200 nodes. For each
+size and regime it evaluates 60 scenarios over five seeds and two graph replicates.
+
 \subsection{Statistics, calibration, and runtime}
 For synthetic graph populations, seeds 11, 22, 33, 44, and 55 define independent
 generator replicates. For OSM, the road area is the outer sampling cluster and
 seed is nested within area. Hierarchical intervals resample areas with
 replacement and then one seed realization within each sampled area 10,000
-times. Paired comparisons preserve method pairing within area and seed. The
+times. An effect has inferential support here only when its area- or
+country-clustered 95\% interval excludes zero; otherwise its sign is reported
+strictly as a descriptive point-estimate trend. This convention is especially
+important for six-cluster LOCO and is not repaired by extra scenario or seed
+rows. Paired comparisons preserve method pairing within area and seed. The
 five-area leave-one-area-out analysis is re-estimated with the same area-outer
 hierarchy. No scenario-level $p$-value is used.
 Continuous calibration is summarized by regressing target on prediction within
@@ -432,26 +455,13 @@ distribution-specific calibration rather than robust transfer.
 
 \subsection{Backbone robustness}
 Replacing GCN propagation with GraphSAGE tests whether the main conclusion is
-an artefact of a weak backbone. Table~\ref{tab:backbone} shows that this is not
+an artefact of a weak backbone. Appendix Table~\ref{tab:backbone} shows that this is not
 the case: residual learning improves point-estimate MAE for both backbones in
 all four zero-shot conditions. Paired direct-minus-residual differences for
 GraphSAGE are 0.0197 [0.0071, 0.0332] and 0.0190 [0.0107, 0.0273] on synthetic
 independent and spatial failures, and 0.0069 [0.0032, 0.0096] and 0.0239
 [-0.0073, 0.0697] on OSM. The final OSM-spatial interval crosses zero, so the
 effect is not declared established there.
-
-\begin{table}[htbp]
-\centering
-\caption{Architecture control: MAE, seed mean [95\% seed-bootstrap interval].}
-\label{tab:backbone}
-\resizebox{\textwidth}{!}{\begin{tabular}{llcccc}
-\toprule Domain&Failure&Direct GCN&Residual GCN&Direct GraphSAGE&Residual GraphSAGE\\ \midrule
-Synthetic&Independent&.077 [.054,.096]&.052 [.036,.071]&.066 [.050,.081]&\textbf{.046 [.034,.063]}\\
-Synthetic&Spatial&.081 [.067,.097]&\textbf{.065 [.049,.079]}&.084 [.068,.101]&.065 [.047,.085]\\
-OSM&Independent&.106 [.100,.111]&\textbf{.097 [.091,.102]}&.104 [.098,.108]&.097 [.091,.103]\\
-OSM&Spatial&.102 [.077,.148]&.090 [.071,.124]&.113 [.082,.164]&\textbf{.089 [.079,.099]}\\ \bottomrule
-\end{tabular}}
-\end{table}
 
 \subsection{Cross-country, targeted, and edge-aware evaluation}
 Table~\ref{tab:expanded} reports the expanded 13-area experiment. Positive
@@ -476,6 +486,25 @@ GraphSAGE&\textbf{.0253 [.0114,.0425]}&.0159 [-.0043,.0365]&\textbf{.0257 [.0095
 Edge-MPNN&.0042 [-.1210,.1227]&.0128 [-.1489,.1575]&.0359 [-.0412,.1113]\\ \bottomrule
 \end{tabular}}
 \end{table}
+
+\subsection{Transport-proxy and graph-size controls}
+The transport-topology proxies do not approximate the spectral target closely.
+Area-mean MAE for OD-efficiency loss is .396, .582, and .244 under independent,
+spatial, and targeted failure; largest-component loss gives .403, .592, and
+.256. Area-clustered intervals appear in Appendix Fig.~\ref{fig:revisioncontrols}.
+These controls show that the learned gains are not obtained by relabelling a
+component-size or shortest-path summary. They do not show that algebraic
+connectivity is a better measure of traffic service, because no demand,
+capacity, or assignment data enter the experiment.
+
+Within the fixed planar-lattice family, first-order spectral MAE decreases from
+.115 to .002 for independent failures and from .091 to .002 for targeted
+failures between 50 and 1,200 nodes. Spatial-cluster MAE remains non-monotone
+(.478 at 50 nodes and .300 at 1,200) because localized removal often disconnects
+the lattice. Under the fixed 1--8-edge policy, increasing size alone therefore
+does not reproduce the broad real-network prior miscalibration. This control
+does not fully identify morphology, but size is no longer the sole untested
+explanation.
 
 \subsection{Eigengap, analytical order, and learned correction}
 The truncated second-order perturbation baseline improves over first order by
@@ -582,8 +611,9 @@ being removed as outliers.
 \section{Discussion}
 The central result is a condition, not a new-architecture claim. A spectral
 residual improves point estimates for GCN, GraphSAGE, and edge-MPNN on the
-expanded zero-shot OSM test, although only three of nine area-level intervals
-exclude zero. It combines the prior's ranking
+expanded zero-shot OSM test, but inferential support is limited to three of nine
+area-level intervals. The remaining signs are descriptive trends, not established
+population effects. It combines the prior's ranking
 signal with learned nonlinear calibration. However, blocked OSM transfer and
 reliability-context ablation show that the same inductive bias can amplify
 domain-specific error. The prior can then behave as a shortcut or biased anchor:
@@ -592,9 +622,11 @@ calibration has shifted. Yet matched LOCO results are mixed rather than a
 consistent direct-model victory: the residual helps two failure regimes and
 hurts one, with country-level support only for targeted failures. The same
 sign pattern under joint training rules out training-regime pooling as its
-cause. Consequently, whether a
-mathematical prior helps is an empirical distribution-shift question, not an
-architectural guarantee.
+cause. Because LOCO has only six country clusters, its targeted result is the
+only cross-country contrast with inferential support; independent and spatial
+signs remain descriptive. Consequently, the evidence establishes domain- and
+regime-sensitive behaviour in this sample, not a general causal effect of
+training domain or an architectural guarantee.
 
 The study also separates the explicit prior from Fiedler node information.
 Neither Fiedler nor coordinate removal produces a stable loss, whereas replacing
@@ -637,12 +669,15 @@ replication rather than inflate sample size with correlated scenarios.
 
 \section{Conclusion}
 Residual spectral graph learning offers an interpretable, fast estimator of
-finite multi-edge connectivity loss, but its advantage depends on training
-domain. The method improves point estimates across GCN, GraphSAGE, and
+finite multi-edge connectivity loss whose observed advantage varies with
+training domain and failure regime. The method improves point estimates across GCN, GraphSAGE, and
 edge-MPNN in the expanded zero-shot study, with area-level support in three of
 nine conditions. OSM-to-OSM results vary by protocol and failure regime: the
 five-area reversal does not persist uniformly in matched six-country LOCO
 transfer, and joint training yields the same sign pattern.
+Only three of nine expanded zero-shot contrasts and one of three matched LOCO
+contrasts have clustered intervals excluding zero; all other signs remain
+descriptive.
 Reporting both outcomes, along with ablations, hierarchical
 uncertainty, targeted attacks, eigengap and second-order controls, correction
 calibration, error cases, and separated runtime costs, provides a
@@ -695,6 +730,38 @@ connected base graph and yields mean degree approximately 4.2. Sparse
 reported both separately and amortized over 1,000 scenarios, preventing
 preprocessing from being hidden in the speed comparison.
 
+The transport control replays the stored OSM scenario seeds and checks failure
+counts against the original predictions before computing largest-component and
+64-pair inverse-shortest-path losses. The size control uses two planar-lattice
+graphs per size, six scenarios per regime and seed, and five seeds. Machine-readable
+scenario predictions and summaries accompany the plotting script.
+
+\begin{table}[htbp]
+\centering\small
+\caption{Architecture control: MAE, seed mean [95\% seed-bootstrap interval].}
+\label{tab:backbone}
+\resizebox{\textwidth}{!}{\begin{tabular}{llcccc}
+\toprule Domain&Failure&Direct GCN&Residual GCN&Direct GraphSAGE&Residual GraphSAGE\\ \midrule
+Synthetic&Independent&.077 [.054,.096]&.052 [.036,.071]&.066 [.050,.081]&\textbf{.046 [.034,.063]}\\
+Synthetic&Spatial&.081 [.067,.097]&\textbf{.065 [.049,.079]}&.084 [.068,.101]&.065 [.047,.085]\\
+OSM&Independent&.106 [.100,.111]&\textbf{.097 [.091,.102]}&.104 [.098,.108]&.097 [.091,.103]\\
+OSM&Spatial&.102 [.077,.148]&.090 [.071,.124]&.113 [.082,.164]&\textbf{.089 [.079,.099]}\\ \bottomrule
+\end{tabular}}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=.96\textwidth]{../outputs/revision_controls/revision_controls.pdf}
+\caption{Reviewer-motivated controls. (a) Topology-only transport-proxy error
+against the algebraic-connectivity-loss target. (b) First-order spectral error
+as graph size changes within one planar road-like graph family.}
+\label{fig:revisioncontrols}
+\par\small\textit{Alt text: The left panel shows high proxy errors across three
+failure regimes. The right log--log panel shows spectral error decreasing with
+size for independent and targeted failures but remaining high and non-monotone
+for spatial failures.}
+\end{figure}
+
 \begin{table}[htbp]
 \centering\small
 \caption{Fairness controls for the expanded architecture comparison. Parameter
@@ -716,6 +783,10 @@ cannot be attributed to an intentionally smaller capacity; it may nevertheless
 benefit from architecture-specific tuning, which was outside this control.
 
 \begin{thebibliography}{99}
+\bibitem{yuwang2024} R. Yu and R. Wang, Learning dynamical systems from data:
+an introduction to physics-guided deep learning,
+\emph{Proceedings of the National Academy of Sciences} 121 (2024), e2311808121.
+doi:10.1073/pnas.2311808121.
 \bibitem{fiedler1973} M. Fiedler, Algebraic connectivity of graphs,
 \emph{Czechoslovak Mathematical Journal} 23 (1973), 298--305.
 \bibitem{mohar1991} B. Mohar, The Laplacian spectrum of graphs, in

@@ -20,6 +20,9 @@ def main():
     parser.add_argument("--input", type=Path, default=Path("outputs/country_transfer_per_mode"))
     parser.add_argument("--output", type=Path, default=Path("outputs/country_transfer_per_mode_summary"))
     args = parser.parse_args()
+    plt.rcParams.update({"font.size": 11, "axes.titlesize": 12,
+                         "axes.labelsize": 11, "xtick.labelsize": 10,
+                         "ytick.labelsize": 10, "legend.fontsize": 9})
     args.output.mkdir(parents=True, exist_ok=True)
     frames = [pd.read_csv(path) for path in sorted(args.input.glob("seed_*/predictions.csv"))]
     data = pd.concat(frames, ignore_index=True)

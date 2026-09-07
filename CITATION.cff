@@ -7,15 +7,10 @@ authors:
     given-names: "Van-Truong"
     orcid: "https://orcid.org/0009-0008-7015-7392"
 repository-code: "https://github.com/lee-vtruong/ResiliRoad"
-url: "https://doi.org/10.5281/zenodo.22307723"
-doi: "10.5281/zenodo.22307723"
-identifiers:
-  - type: doi
-    value: "10.5281/zenodo.22307723"
-    description: "Archived ResiliRoad v1.0.0 release"
+url: "https://github.com/lee-vtruong/ResiliRoad"
 license: MIT
-version: "1.0.0"
-date-released: "2026-09-02"
+version: "1.1.0"
+date-released: "2026-09-07"
 keywords:
   - algebraic connectivity
   - graph neural network
