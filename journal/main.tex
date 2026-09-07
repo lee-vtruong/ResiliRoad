@@ -46,8 +46,8 @@ clusters, these results characterize the spectral residual as a potentially usef
 but domain-sensitive inductive bias and delimit
 its applicability to structural connectivity rather than hazard or traffic-flow
 prediction. Code, cached networks, and reproducibility artefacts are permanently
-archived at \href{https://doi.org/10.5281/zenodo.22307723}{doi:10.5281/zenodo.22307723};
-the development repository is available on
+archived at \href{https://doi.org/10.5281/zenodo.22307723}{doi:10.5281/zenodo.22307723}.
+The development repository is available on
 \href{https://github.com/lee-vtruong/ResiliRoad}{GitHub}.
 \end{abstract}
 
@@ -77,17 +77,17 @@ Fiedler approximation improve direct graph regression? \textbf{RQ2}: Does this
 advantage persist under correlated disruptions and geographic domain shift?
 \textbf{RQ3}: Which gains come from the explicit prior, Fiedler node feature,
 coordinates, or adjacency-aware message passing? \textbf{RQ4}: Where does the
-estimator fail and how does its runtime scale?
+estimator fail, and how does its runtime scale?
 
-Rather than asking whether one new GNN architecture wins, the central thesis is
+Rather than asking whether a new graph neural network (GNN) architecture wins, the central thesis is
 \emph{when a mathematically informed spectral prior helps graph learning under
 distribution shift, and when it becomes a biased anchor}, meaning a systematically
 miscalibrated analytical starting value that the learned correction fails to undo. The contributions
 are as follows: (i) a bounded residual spectral construction for simultaneous edge
 deletions; (ii) controlled feature, GCN/GraphSAGE/edge-MPNN, second-order, and reliability-context
-ablations; (iii) three disruption processes on 13 cached OSM networks in six countries; (iv) both
+ablations; (iii) three disruption processes on 13 cached OpenStreetMap (OSM) networks in six countries; (iv) both
 synthetic-to-real zero-shot and geographically disjoint OSM transfer; (v)
-area-clustered hierarchical inference, calibration, eigengap and correction diagnostics; and
+area-clustered hierarchical inference, calibration, eigengap, and correction diagnostics; and
 (vi) a benchmark separating eigensolver setup, amortized spectral evaluation,
 and update-only cost. Importantly, the transfer experiments reveal a limitation:
 the residual prior is not uniformly superior once OSM training data are
@@ -121,13 +121,12 @@ geometric proxy, not an empirical hazard model.
 
 Recent evidence has made scale and task definition especially important. Jana et
 al.~\cite{jana2023} used an edge-based GNN to rank critical road segments after
-disruption, directly motivating learning-based rapid screening; their output is
+disruption, directly motivating learning-based rapid screening. Their output is
 an edge ranking, whereas ours is a graph-level spectral-loss estimate. Boeing
 and Ha~\cite{boeingha2024} simulated 2.4 billion trips across more than 8,000
 urban areas in 178 countries, establishing an empirical scale far beyond our
 13 neighbourhood networks. Zang et al.~\cite{zang2024} predicted dynamic traffic
-resilience under rainfall using a multi-granularity GNN; their functional,
-temporal target is complementary to our static structural target. Reviews
+resilience under rainfall using a multi-granularity GNN; their dynamic, functional target is complementary to our static structural target. Reviews
 distinguish connectivity, robustness, vulnerability, and recovery-based
 resilience and warn against treating them as synonymous
 ~\cite{rivera2022,mattsson2015,zeleke2026}.
@@ -202,7 +201,7 @@ For deletion of edges $S$, $\Delta L=-\sum_{(i,j)\in S}w_{ij}
 (e_i-e_j)(e_i-e_j)^\top$. The second-order connectivity estimate is
 $\lambda_2+\Delta\lambda_2^{(2)}$ and is converted to relative loss using
 Eq.~\eqref{eq:target}, with the same $[0,1]$ clipping as the first-order estimate. Twelve
-modes are fixed for every graph before evaluation and were not tuned on test
+modes were fixed for every graph before evaluation and were not tuned on test
 performance. The $k=1$ term vanishes because $\Delta L\mathbf{1}=0$;
 numerically, the retained modes exclude $k=2$ from the correction sum.
 We also record the relative eigengap
@@ -225,13 +224,12 @@ features enter a selected GNN backbone whose residual is added to the spectral
 estimate.}
 \end{figure}
 
-The ablation matrix contains direct and residual GCNs with all features, without
-Fiedler, and without coordinates; Deep Sets and a summary-statistic MLP are
+The ablation matrix contains direct and residual GCNs with all features, without the Fiedler feature, and without coordinates; Deep Sets and a summary-statistic MLP are
 non-GCN baselines. A further reliability-context residual appends the prior,
 normalized failure count, density, and graph size to the prediction head. It
 does not use damaged connectivity or any label-derived flag. As a stronger
 architecture control, GraphSAGE concatenates each node state with a normalized
-neighbourhood aggregate before each of three learned transformations. Its direct
+neighbourhood aggregate before each of the three learned transformations. Its direct
 and residual variants use the same features, pooling, optimizer, split, and
 stopping rule as the GCN.
 The edge-aware MPNN instead forms
@@ -239,16 +237,16 @@ $m_{ij}=\phi(h_i,h_j,e_{ij})$ over every intact candidate link, where
 $e_{ij}$ contains normalized conductance, inverse-conductance length, a failed
 edge indicator, and normalized $(u_{2,i}-u_{2,j})^2$. Mean incoming messages
 update node states in three layers. Keeping failed links as candidates allows
-the model to observe deletion explicitly rather than only through damaged
+the model to observe deletions explicitly rather than only through damaged
 adjacency and node incidence.
 
 \section{Experimental design}
 \subsection{Synthetic graphs and disruption processes}
 Connected random geometric graphs contained 35--65 nodes and used inverse-length edge
-conductance. The original two-mode experiment generated 800 scenarios per mode
-and seed; the expanded three-mode experiment generated 400 per mode and seed.
-All base-graph families were assigned to training, validation, or testing. Each
-scenario removed one to eight edges. Independent failures sampled edges uniformly.
+conductances. The original two-mode experiment generated 800 scenarios per mode
+and seed, and the expanded three-mode experiment generated 400 per mode and seed.
+All base-graph families were assigned to training, validation, or testing. In each
+scenario, one to eight edges were removed. Independent failures sampled edges uniformly.
 For spatial-cluster failures, a random epicentre was chosen and the required
 number of edges with the nearest geometric midpoints was removed. Both modes used the same
 failure-count distribution.
@@ -339,9 +337,9 @@ size and regime it evaluates 60 scenarios over five seeds and two graph replicat
 \subsection{Statistics, calibration, and runtime}
 For synthetic graph populations, seeds 11, 22, 33, 44, and 55 define independent
 generator replicates. For OSM, the road area is the outer sampling cluster and
-seed is nested within area. Hierarchical intervals resample areas with
-replacement and then one seed realization within each sampled area 10,000
-times. An effect has inferential support here only when its area- or
+seed is nested within area. Hierarchical intervals were obtained by resampling
+areas with replacement and then one seed realization within each sampled area
+10,000 times. An effect has inferential support here only when its area- or
 country-clustered 95\% interval excludes zero; otherwise its sign is reported
 strictly as a descriptive point-estimate trend. This convention is especially
 important for six-cluster LOCO and is not repaired by extra scenario or seed
@@ -353,8 +351,7 @@ each seed, reporting slope, intercept, and signed mean error. Error slices by
 connectivity, failure count, density/site, and spectral clipping are diagnostic.
 
 The original OSM benchmark uses dense symmetric eigendecomposition and
-one-scenario neural inference on CPU. A separate controlled benchmark uses
-sparse symmetric eigensolves on random geometric graphs with 50--800 nodes. It
+one-scenario neural inference on CPU. A separate controlled benchmark uses sparse symmetric eigensolver computations on random geometric graphs with 50--800 nodes. It
 reports exact damaged-graph solution, update-only Fiedler sensitivity, and
 amortized spectral cost (one intact setup spread over ten scenarios). These
 denser graphs are computational stress tests rather than road-realistic samples.
@@ -408,7 +405,7 @@ mean $R^2$ 0.714 and 0.747, compared with 0.550 and 0.529 for the residual
 model. The paired residual-minus-direct MAE differences are 0.0261
 [-0.0357, 0.1572] and 0.0350 [-0.0479, 0.2320]; both area-outer intervals include zero,
 so five areas do not establish direct-model superiority. Residual performance is seed-sensitive: independent-failure MAE ranges
-from 0.092 to 0.265. Calibration explains part of this instability. Direct-GCN
+from 0.092 to 0.265. Calibration partly explains this instability. Direct-GCN
 slopes stay between 0.91 and 1.06; residual slopes fall to 0.58 and 0.69 in the
 two poorest seeds, with substantial underprediction. Thus the spectral prior is
 helpful under one training distribution but can become a shortcut or a biased
@@ -505,7 +502,7 @@ morphology-matched synthetic-to-OSM transfer test.
 The transport-topology proxies do not approximate the spectral target closely.
 Area-mean MAE for OD-efficiency loss is .396, .582, and .244 under independent,
 spatial, and targeted failure; largest-component loss gives .403, .592, and
-.256. Area-clustered intervals are shown in Appendix Fig.~\ref{fig:revisioncontrols}.
+.256. Area-clustered intervals are shown in Appendix Figure~\ref{fig:revisioncontrols}.
 These controls show that the learned gains are not obtained by relabelling a
 component-size or shortest-path summary. They do not show that algebraic
 connectivity is a better measure of traffic service, because no demand,
@@ -521,7 +518,7 @@ does not fully identify morphology, but size is no longer the sole untested
 explanation.
 
 \subsection{Eigengap, analytical order, and learned correction}
-The truncated second-order perturbation baseline improves over first order by
+The truncated second-order perturbation baseline improves over the first-order baseline by
 .00284 [.00050,.00673], .00359 [.00081,.00756], and .00533
 [.00133,.01187] MAE under independent, spatial, and targeted disruption,
 respectively. These gains are consistent but too small to close the gap to the
@@ -534,9 +531,7 @@ the middle tertile, but the relationship is non-monotone. Residual improvement
 also does not vanish uniformly at small gaps.
 
 Mechanistic correction diagnostics support a more specific biased-anchor
-interpretation. Under targeted transfer, regression slopes of learned on
-needed correction are .512 (GCN), .580 (GraphSAGE), and .486 (edge-MPNN),
-compared with .843, .834, and .617 under independent failure. The residual
+interpretation. Under targeted transfer, regression slopes relating the learned correction to the needed correction are .512 (GCN), .580 (GraphSAGE), and .486 (edge-MPNN), compared with .843, .834, and .617 under independent failure. The residual
 therefore tends to shrink the correction precisely in the targeted regime,
 rather than fully undoing a miscalibrated analytical anchor.
 
@@ -558,7 +553,7 @@ calibration of learned corrections against ideal corrections.}
 
 A descriptive area-level check finds Spearman correlations of residual-GCN
 gain with node count, density, and relative eigengap of 0.40, $-0.35$, and
-$-0.11$, respectively (Fig.~\ref{fig:structuregain}). With only 13 purposively
+$-0.11$, respectively (Figure~\ref{fig:structuregain}). With only 13 purposively
 selected areas these are not inferential or causal estimates, but they show no
 simple collapse of the residual gain as graph size increases and no single
 structural variable explains it.
@@ -625,7 +620,7 @@ matched LOCO), four have inferential support because their area- or
 country-clustered 95\% intervals exclude zero; the other eight are treated only
 as descriptive trends. This convention governs the interpretation below.
 
-The central result is a condition, not a new-architecture claim. A spectral
+The central result is a condition rather than a new architectural claim. A spectral
 residual improves point estimates for GCN, GraphSAGE, and edge-MPNN on the
 expanded zero-shot OSM test. It combines the prior's ranking
 signal with learned nonlinear calibration. However, blocked OSM transfer and
@@ -677,7 +672,7 @@ intervals and sensitivity to validation geography must be retained. No
 probabilistic predictive intervals are
 produced. Sparse batched neural
 implementations and spectral sparsification~\cite{spielman2011} may change
-runtime rankings at still larger scale.
+runtime rankings at still larger scales.
 
 Future work should pre-register larger metropolitan regions, use nested blocked
 validation across countries, and disentangle graph size from density. Hazard rasters
@@ -729,9 +724,9 @@ results, and takes responsibility for the manuscript.
 \section{Reproducibility details}
 All models use AdamW, mean-squared error, validation early stopping, and one
 PyTorch compute thread. Core runs use at most 80 epochs; area-blocked OSM
-transfer uses at most 25 and LOCO uses at most 12. Software versions are Python 3.13.11, NumPy 2.4.4, SciPy
+transfer uses at most 25 epochs and LOCO uses at most 12 epochs. Software versions are Python 3.13.11, NumPy 2.4.4, SciPy
 1.17.1, NetworkX 3.6.1, pandas 2.2.3, scikit-learn 1.9.0, PyTorch 2.11.0
-(CPU), Matplotlib 3.11.1, OSMnx 2.1.1, and GeoPandas 1.1.4. The machine has 16
+(CPU), Matplotlib 3.11.1, OSMnx 2.1.1, and GeoPandas 1.1.4. The machine had 16
 logical AMD64 CPUs; CUDA was unavailable. Scripts record exact seeds and emit
 scenario predictions, training histories, fold assignments, runtime summaries,
 bootstrap tables, calibration diagnostics, and worst cases.
@@ -746,8 +741,8 @@ lowest 12 Laplacian modes, and eigengap tertiles are assigned at graph level.
 Large-scale runtime graphs use a normalized near-square lattice,
 four-neighbour grid backbone, independent northwest diagonals with probability
 0.12, and inverse-length conductance; the deterministic grid guarantees a
-connected base graph and yields mean degree approximately 4.2. Sparse
-\texttt{eigsh} uses a fixed starting vector. The intact setup cost is
+connected base graph and yields mean degree approximately 4.2. The sparse
+\texttt{eigsh} solver uses a fixed starting vector. The intact setup cost is
 reported both separately and amortized over 1,000 scenarios, preventing
 preprocessing from being hidden in the speed comparison.
 
@@ -804,7 +799,7 @@ weight decay $10^{-4}$, validation rule, and random seeds. Hyperparameters were
 fixed before the expanded test and were not selected separately to favour a
 backbone. Edge-MPNN has substantially more parameters, so its weaker result
 cannot be attributed to an intentionally smaller capacity; it may nevertheless
-benefit from architecture-specific tuning, which was outside this control.
+benefit from architecture-specific tuning, which was outside the scope of this control.
 
 \begin{thebibliography}{99}
 \bibitem{yuwang2024} R. Yu and R. Wang, Learning dynamical systems from data:

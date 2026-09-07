@@ -38,6 +38,13 @@ outputs/paper_summary/all_predictions.csv
 cache/
 
 # LaTeX intermediates (keep final PDF)
+journal/*.aux
+journal/*.fdb_latexmk
+journal/*.fls
+journal/*.log
+journal/*.out
+journal/*.pdf
+journal/*.synctex.gz
 report/tmp/
 report/report/
 report/output/pdf/*.aux
@@ -60,3 +67,7 @@ poster/output/pdf/*.out
 poster/output/pdf/*.snm
 poster/output/pdf/*.toc
 poster/output/pdf/main.pdf
+
+# Local submission bundles
+release/
+/tmp/
