@@ -318,7 +318,7 @@ label generation and evaluation. Because these were separate executions rather
 than a controlled timing benchmark, the unadjusted totals document provenance
 and are not evidence of comparative efficiency.
 
-Two reviewer-motivated controls delimit competing explanations. First, we
+Two additional robustness controls delimit competing explanations. First, we
 replay every expanded OSM disruption and compute two topology-only transport
 proxies: relative loss of the largest connected component and relative loss of
 mean inverse shortest-path length over 64 fixed origin--destination pairs per
@@ -633,6 +633,14 @@ rule. The poor Deep Sets ranking in several
 regimes supports adjacency-aware propagation, while the summary MLP shows that
 coarse graph statistics are insufficient.
 
+For practical deployment, the model should be used as a screening layer rather
+than as a replacement for exact analysis or traffic simulation. An operator can
+precompute the intact-network spectrum, rank large scenario batches with the
+hybrid estimator, and recompute exact metrics for the highest-risk or most
+uncertain cases. Because calibration changes across geography and failure
+regime, deployment should include blocked validation on representative local
+areas and should fall back to exact computation when that validation fails.
+
 \subsection{Limitations}
 Thirteen purposively selected neighbourhoods in six Asian countries improve
 geographic and morphological coverage but do not establish global or
@@ -743,7 +751,7 @@ OSM&Spatial&.102 [.077,.148]&.090 [.071,.124]&.113 [.082,.164]&\textbf{.089 [.07
 \begin{figure}[H]
 \centering
 \includegraphics[width=.96\textwidth]{../outputs/revision_controls/revision_controls.pdf}
-\caption{Reviewer-motivated controls. (a) Topology-only transport-proxy error
+\caption{Additional robustness controls. (a) Topology-only transport-proxy error
 against the algebraic-connectivity-loss target. (b) First-order spectral error
 as graph size changes within one planar road-like graph family.}
 \label{fig:revisioncontrols}
@@ -876,7 +884,7 @@ Environment and Urban Systems} 65 (2017), 126--139.
 doi:10.1016/j.compenvurbsys.2017.05.004.
 \bibitem{osm} OpenStreetMap contributors, OpenStreetMap, 2026,
 \url{https://www.openstreetmap.org/copyright}.
-\bibitem{resiliroad} V.-T. Le, ResiliRoad: residual spectral graph learning for
+\bibitem{resiliroad} [dataset] V.-T. Le, ResiliRoad: residual spectral graph learning for
 road-network disruption analysis, version 1.0.0, Zenodo (2026),
 doi:10.5281/zenodo.22307723.
 \end{thebibliography}
