@@ -6,11 +6,12 @@
 \setlength{\parindent}{1em}
 \setlength{\parskip}{0pt}
 \title{When does a spectral prior help graph learning? Connectivity-loss estimation under road-network disruptions}
-\author{Van-Truong Le\\
+\author{Van-Truong Le$^{*}$\\
 \small Faculty of Information Technology, University of Science,\\
 \small Viet Nam National University Ho Chi Minh City, Viet Nam\\
-\small \href{mailto:23120181@student.hcmus.edu.vn}{23120181@student.hcmus.edu.vn};
-\href{mailto:lvtruong@selab.hcmus.edu.vn}{lvtruong@selab.hcmus.edu.vn}\\
+\small $^{*}$Corresponding author:
+\href{mailto:23120181@student.hcmus.edu.vn}{23120181@student.hcmus.edu.vn}\\
+\small E-mail: \href{mailto:lvtruong@selab.hcmus.edu.vn}{lvtruong@selab.hcmus.edu.vn}\\
 \small ORCID: \href{https://orcid.org/0009-0008-7015-7392}{0009-0008-7015-7392}}
 \date{}
 
@@ -208,6 +209,8 @@ We also record the relative eigengap
 $\gamma=(\lambda_3-\lambda_2)/\lambda_2$, which measures proximity to the next
 mode but is not supplied to any learner.
 
+Figure~\ref{fig:method} summarizes the complete ResiliRoad workflow.
+
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{../figures/method_overview.pdf}
@@ -262,6 +265,9 @@ simple graphs, and restricted to the largest connected component. Conductance
 is $100/\mathrm{length}_{\mathrm m}$. Cached GraphML freezes the exact instances
 because live OSM data evolve.
 
+Table~\ref{tab:osm} summarizes the OSM networks, while
+Figure~\ref{fig:osm} illustrates three representative street morphologies.
+
 \begin{table}[H]
 \centering
 \caption{OpenStreetMap networks used in the study.}
@@ -277,6 +283,9 @@ Taipei&Taiwan&1,300&965&1,546&.00332\\ Kyoto&Japan&1,500&909&1,468&.00356\\
 Tokyo&Japan&1,200&1,108&1,675&.00273\\ \bottomrule
 \end{tabular}}
 \end{table}
+
+Figure~\ref{fig:loco} shows the corresponding country-level
+direct-minus-residual differences across failure regimes.
 
 \begin{figure}[H]
 \centering
@@ -355,6 +364,8 @@ denser graphs are computational stress tests rather than road-realistic samples.
 
 \section{Results}
 \subsection{Graph-disjoint synthetic and zero-shot OSM results}
+Table~\ref{tab:primary} summarizes the graph-disjoint synthetic and zero-shot
+OSM results.
 \begin{table}[H]
 \centering\small
 \caption{MAE as seed mean [95\% seed-bootstrap interval].}
@@ -381,6 +392,8 @@ coordinates from residual-full yields intervals containing zero; individual
 node-feature necessity is therefore not established.
 
 \subsection{Geographically blocked transfer}
+Table~\ref{tab:loao} reports the geographically blocked leave-one-area-out
+results.
 \begin{table}[H]
 \centering
 \caption{Leave-one-area-out OSM performance, area mean [95\% hierarchical
@@ -527,6 +540,9 @@ compared with .843, .834, and .617 under independent failure. The residual
 therefore tends to shrink the correction precisely in the targeted regime,
 rather than fully undoing a miscalibrated analytical anchor.
 
+Figure~\ref{fig:jcn2} summarizes the eigengap, targeted-disruption, and
+correction-calibration diagnostics.
+
 \begin{figure}[H]
 \centering
 \includegraphics[width=.96\textwidth]{../outputs/jcn2_summary/jcn2_diagnostics.pdf}
@@ -579,6 +595,8 @@ screening path is 56 times faster at the largest size, conditional on reusing
 one intact graph. Only three scenarios on each of two graphs are timed per size,
 and none is used for accuracy training; this is a scaling check, not evidence
 of predictive generalization.
+
+The corresponding scaling curves are shown in Figure~\ref{fig:scaling}.
 
 \begin{figure}[H]
 \centering
@@ -698,6 +716,10 @@ This research received no external funding.
 \section*{Conflict of interest}
 The author declares no conflict of interest.
 
+\section*{Ethics approval}
+Ethics approval was not required because this study did not involve human
+participants, human data, animals, or personally identifiable information.
+
 \section*{Acknowledgements and AI-use disclosure}
 Generative AI tools were used for language editing and software-development
 assistance. The author designed the study, verified the implementation and
@@ -760,6 +782,9 @@ failure regimes. The right log--log panel shows spectral error decreasing with
 size for independent and targeted failures but remaining high and non-monotone
 for spatial failures.}
 \end{figure}
+
+Table~\ref{tab:modelbudget} summarizes parameter counts and common training
+settings across backbones.
 
 \begin{table}[H]
 \centering\small
@@ -826,9 +851,6 @@ doi:10.1016/j.trd.2020.102672.
 effects of link-repair sequences on road network resilience,
 \emph{International Journal of Critical Infrastructure Protection} 34 (2021),
 100448. doi:10.1016/j.ijcip.2021.100448.
-\bibitem{bruneau2003} M. Bruneau et al., A framework to quantitatively assess
-and enhance the seismic resilience of communities, \emph{Earthquake Spectra}
-19 (2003), 733--752. doi:10.1193/1.1623497.
 \bibitem{mattsson2015} L.-G. Mattsson and E. Jenelius, Vulnerability and
 resilience of transport systems---a discussion of recent research,
 \emph{Transportation Research A} 81 (2015), 16--34.
