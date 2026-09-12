@@ -212,16 +212,16 @@ Figure~\ref{fig:method} summarizes the complete ResiliRoad workflow.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{../figures/method_overview.pdf}
-\caption{ResiliRoad workflow. Exact damaged-graph eigendecomposition constructs
-labels only. The intact Fiedler vector produces both an optional node feature
-and the explicit first-order prior; the selected GNN backbone learns a bounded
-correction.}
+\includegraphics[width=\textwidth]{../figures/method_overview.png}
+\caption{ResiliRoad workflow from an intact road graph and sampled edge failures
+to an exact training label, a first-order Fiedler prior, and direct or bounded
+residual prediction by the selected GNN backbone.}
 \label{fig:method}
-\par\small\textit{Alt text: A flow diagram splits an intact road graph into an
-exact-label branch and a fast spectral-prior branch. Damaged adjacency and node
-features enter a selected GNN backbone whose residual is added to the spectral
-estimate.}
+\par\small\textit{Alt text: A two-part workflow diagram. The upper panel shows
+an intact road network, selected failed edges, the resulting disrupted graph,
+and a degraded connectivity indicator. The lower panel follows six stages:
+input graph, failure sampling, exact label construction, spectral-prior
+calculation, graph neural network prediction, and evaluation.}
 \end{figure}
 
 The ablation matrix contains direct and residual GCNs with all features, without the Fiedler feature, and without coordinates; Deep Sets and a summary-statistic MLP are

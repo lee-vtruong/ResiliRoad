@@ -15,5 +15,5 @@
 - [ ] Run OUP/Paperpal Preflight and inspect the ScholarOne-generated proof.
 - [ ] Select a standard or open-access licence after checking institutional funding.
 
-Official instructions checked 2 September 2026:
+Official instructions checked 12 September 2026:
 https://academic.oup.com/comnet/pages/General_Instructions

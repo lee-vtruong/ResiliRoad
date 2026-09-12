@@ -77,7 +77,9 @@ ax.text(0.5, 0.025, "Graph-disjoint synthetic training; evaluation spans 13 OSM 
         ha="center", va="bottom", fontsize=9, color="#475569")
 
 fig.tight_layout(pad=0.25)
-for suffix in ("pdf", "svg", "png"):
+# The journal/README use the curated illustrated PNG.  This script retains the
+# compact vector schematic used by the report and poster without overwriting it.
+for suffix in ("pdf", "svg"):
     fig.savefig(OUT / f"method_overview.{suffix}", dpi=300, bbox_inches="tight",
                 facecolor="white")
 plt.close(fig)

@@ -129,7 +129,7 @@ script performs this loop and compiles the paper.
 - [JCN cover letter](journal/output/pdf/ResiliRoad_JCN_Cover_Letter.pdf)
 - [Final paper PDF](report/output/pdf/ResiliRoad_Final_Paper.pdf)
 - [Final VMS60 poster PDF](poster/output/pdf/ResiliRoad_VMS60_Poster.pdf)
-- [Method overview (SVG)](figures/method_overview.svg)
+- [Method overview (PNG)](figures/method_overview.png)
 
 ## Citation
 
